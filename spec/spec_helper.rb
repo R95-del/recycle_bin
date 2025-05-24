@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
-require "bundler/setup"
+require 'bundler/setup'
 
 # Load Rails components needed for testing
-require "active_record"
-require "active_support"
-require "active_support/core_ext"
+require 'active_record'
+require 'active_support'
+require 'active_support/core_ext'
 
 # Load the gem first
-require "recycle_bin"
+require 'recycle_bin'
 
 # Configure ActiveRecord for testing
 ActiveRecord::Base.establish_connection(
-  adapter: "sqlite3",
-  database: ":memory:"
+  adapter: 'sqlite3',
+  database: ':memory:'
 )
 
 # Create a test table
@@ -32,7 +32,7 @@ end
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
-  config.example_status_persistence_file_path = ".rspec_status"
+  config.example_status_persistence_file_path = '.rspec_status'
 
   # Disable RSpec exposing methods globally on `Module` and `main`
   config.disable_monkey_patching!

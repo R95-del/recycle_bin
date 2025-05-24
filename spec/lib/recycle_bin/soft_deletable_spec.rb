@@ -1,11 +1,13 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe RecycleBin::SoftDeletable do
-  it "is a module" do
+  it 'is a module' do
     expect(RecycleBin::SoftDeletable).to be_a(Module)
   end
 
-  it "can be included in a class" do
+  it 'can be included in a class' do
     test_class = Class.new do
       include RecycleBin::SoftDeletable
 
@@ -13,7 +15,7 @@ RSpec.describe RecycleBin::SoftDeletable do
 
       def initialize
         @id = 1
-        @title = "Test Item"
+        @title = 'Test Item'
         @deleted_at = nil
       end
     end
@@ -28,7 +30,7 @@ RSpec.describe RecycleBin::SoftDeletable do
     expect(instance).to respond_to(:recyclable_title)
   end
 
-  it "provides recyclable_title method" do
+  it 'provides recyclable_title method' do
     test_class = Class.new do
       include RecycleBin::SoftDeletable
 
@@ -36,11 +38,11 @@ RSpec.describe RecycleBin::SoftDeletable do
 
       def initialize
         @id = 1
-        @title = "Test Title"
+        @title = 'Test Title'
       end
     end
 
     instance = test_class.new
-    expect(instance.recyclable_title).to eq("Test Title")
+    expect(instance.recyclable_title).to eq('Test Title')
   end
 end
