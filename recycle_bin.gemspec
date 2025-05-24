@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name = 'recycle_bin'
   spec.version = RecycleBin::VERSION
   spec.authors = ['Rishi Somani', 'Shobhit Jain', 'Raghav Agrawal']
-  spec.email = ['somani.rishi81@gmail.com']
+  spec.email = ['somani.rishi81@gmail.com', 'shobhjain09@gmail.com', 'raghavagrawal019@gmail.com']
 
   spec.summary = 'Simple soft delete and trash management for Rails'
   spec.description = 'Add a recycle bin to your Rails app. Soft delete records and restore them with a simple web interface.'
