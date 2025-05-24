@@ -3,6 +3,7 @@
 require 'rails/engine'
 
 module RecycleBin
+  # Rails Engine for RecycleBin functionality
   class Engine < ::Rails::Engine
     isolate_namespace RecycleBin
 
