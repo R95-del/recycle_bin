@@ -3,6 +3,9 @@
 require 'active_support/concern'
 
 module RecycleBin
+  # SoftDeletable module provides soft delete functionality for ActiveRecord models.
+  # Instead of permanently deleting records, it marks them as deleted by setting
+  # a deleted_at timestamp, allowing for restoration and trash management.
   module SoftDeletable
     extend ActiveSupport::Concern
 

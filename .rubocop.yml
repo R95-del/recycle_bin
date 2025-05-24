@@ -1,0 +1,28 @@
+AllCops:
+  TargetRubyVersion: 2.7
+  NewCops: enable
+  SuggestExtensions: false
+
+# Allow empty files
+Lint/EmptyFile:
+  Enabled: false
+
+# Allow development dependencies in gemspec
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+# Allow longer blocks in spec files
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - '*.gemspec'
+
+# Allow longer methods in generators and helpers  
+Metrics/MethodLength:
+  Exclude:
+    - 'lib/generators/**/*'
+    - 'app/helpers/**/*'
+
+# We want documentation for public APIs but not necessarily for internal classes
+Style/Documentation:
+  Enabled: true
