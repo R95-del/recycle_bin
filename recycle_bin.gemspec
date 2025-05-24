@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.email = ['somani.rishi81@gmail.com', 'shobhjain09@gmail.com', 'raghavagrawal019@gmail.com']
 
   spec.summary = 'Simple soft delete and trash management for Rails'
-  spec.description = 'Add a recycle bin to your Rails app. Soft delete records and restore them with a simple web interface.'
+  spec.description = 'Add a recycle bin to your Rails app. ' \
+                     'Soft delete records and restore them with a simple web interface.'
   spec.homepage = 'https://github.com/R95-del/recycle_bin'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 2.7.0'
@@ -17,8 +18,7 @@ Gem::Specification.new do |spec|
   spec.files = Dir.chdir(__dir__) do
     `git ls-files -z`.split("\x0").reject do |f|
       (File.expand_path(f) == __FILE__) ||
-        f.start_with?(*%w[bin/ test/ spec/ features/ .git]) ||
-        f.end_with?('.gem') # Exclude gem files
+        f.start_with?(*%w[bin/ test/ spec/ features/ .git])
     end
   end
 
@@ -31,4 +31,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'factory_bot_rails'
   spec.add_development_dependency 'rspec-rails'
   spec.add_development_dependency 'sqlite3'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 end
