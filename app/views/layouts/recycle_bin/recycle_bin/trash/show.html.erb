@@ -1,0 +1,175 @@
+<% content_for :title, "#{@item.class.name} Details" %>
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 2rem;">
+  <%= link_to "← Back to Trash", recycle_bin.trash_index_path,
+              style: "color: #007bff; text-decoration: none;" %>
+</div>
+
+<!-- Item Header -->
+<div class="card">
+  <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 1.5rem;">
+    <div style="flex: 1;">
+      <h1 style="color: #495057; margin-bottom: 0.5rem;">
+        <span style="font-size: 0.8em; color: #6c757d;"><%= @item.class.name %></span><br>
+        <%= @item.recyclable_title %>
+      </h1>
+      <p style="color: #6c757d;">
+        Deleted <%= time_ago_in_words(@item.deleted_at) %> ago
+        (<%= @item.deleted_at.strftime('%B %d, %Y at %I:%M %p') %>)
+      </p>
+    </div>
+
+    <div style="flex-shrink: 0;">
+      <%= link_to "Restore", recycle_bin.restore_trash_path(@item),
+                  method: :patch,
+                  class: "btn btn-success",
+                  style: "margin-right: 0.5rem;",
+                  data: {
+                    confirm: "Are you sure you want to restore this #{@item.class.name.downcase}?"
+                  } %>
+      <%= link_to "Delete Forever", recycle_bin.trash_path(@item),
+                  method: :delete,
+                  class: "btn btn-danger",
+                  data: {
+                    confirm: "This will permanently delete this #{@item.class.name.downcase}. This action cannot be undone!"
+                  } %>
+    </div>
+  </div>
+
+  <!-- Item Status -->
+  <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+    <strong>Status:</strong>
+    <span style="color: #dc3545;">🗑️ In Trash</span>
+
+    <% if @item.respond_to?(:deleted_at) && @item.deleted_at %>
+      <br><strong>Deleted At:</strong> <%= @item.deleted_at.strftime('%B %d, %Y at %I:%M %p') %>
+    <% end %>
+  </div>
+</div>
+
+<!-- Item Data -->
+<div class="card">
+  <h3 style="margin-bottom: 1.5rem; color: #495057;">Original Data</h3>
+
+  <% if @original_attributes.any? %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 30%;">Field</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @original_attributes.each do |key, value| %>
+          <tr>
+            <td><strong><%= key.humanize %></strong></td>
+            <td>
+              <% if value.nil? %>
+                <em style="color: #6c757d;">nil</em>
+              <% elsif value.is_a?(String) && value.length > 100 %>
+                <div>
+                  <%= truncate(value, length: 100) %>
+                  <details style="margin-top: 0.5rem;">
+                    <summary style="cursor: pointer; color: #007bff;">Show full content</summary>
+                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                      <%= simple_format(value) %>
+                    </div>
+                  </details>
+                </div>
+              <% elsif value.is_a?(Time) || value.is_a?(DateTime) %>
+                <%= value.strftime('%B %d, %Y at %I:%M %p') %>
+                <br><small style="color: #6c757d;">(<%= time_ago_in_words(value) %> ago)</small>
+              <% elsif value.is_a?(Date) %>
+                <%= value.strftime('%B %d, %Y') %>
+              <% elsif value == true %>
+                <span style="color: #28a745;">✓ Yes</span>
+              <% elsif value == false %>
+                <span style="color: #dc3545;">✗ No</span>
+              <% else %>
+                <%= value %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <p>No data available for this item.</p>
+    </div>
+  <% end %>
+</div>
+
+<!-- Associations (if any) -->
+<% if @associations.any? %>
+  <div class="card">
+    <h3 style="margin-bottom: 1.5rem; color: #495057;">Related Items</h3>
+
+    <% @associations.each do |association_name, items| %>
+      <div style="margin-bottom: 2rem;">
+        <h4 style="color: #6c757d; margin-bottom: 1rem;"><%= association_name.humanize %></h4>
+
+        <% if items.any? %>
+          <ul style="list-style: none; padding: 0;">
+            <% items.each do |item| %>
+              <li style="padding: 0.5rem; background: #f8f9fa; margin-bottom: 0.5rem; border-radius: 4px;">
+                <%= item.class.name %> -
+                <%= item.respond_to?(:title) ? item.title :
+                    item.respond_to?(:name) ? item.name :
+                    "ID: #{item.id}" %>
+
+                <% if item.respond_to?(:deleted_at) && item.deleted_at %>
+                  <span style="color: #dc3545; font-size: 0.875rem;">(Also deleted)</span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p style="color: #6c757d; font-style: italic;">No related items found.</p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<!-- Actions -->
+<div class="card" style="background: #f8f9fa;">
+  <h4 style="color: #495057; margin-bottom: 1rem;">Available Actions</h4>
+
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <%= link_to recycle_bin.restore_trash_path(@item),
+                method: :patch,
+                class: "btn btn-success",
+                data: { confirm: "Restore this #{@item.class.name.downcase}?" } do %>
+      ↶ Restore Item
+    <% end %>
+
+    <%= link_to recycle_bin.trash_path(@item),
+                method: :delete,
+                class: "btn btn-danger",
+                data: { confirm: "Permanently delete this #{@item.class.name.downcase}? This cannot be undone!" } do %>
+      🗑️ Delete Forever
+    <% end %>
+
+    <%= link_to recycle_bin.trash_index_path, class: "btn btn-primary" do %>
+      📋 Back to List
+    <% end %>
+  </div>
+</div>
+
+<!-- Debug Info (only in development) -->
+<% if Rails.env.development? %>
+  <div class="card" style="margin-top: 2rem; border: 1px dashed #dee2e6;">
+    <details>
+      <summary style="cursor: pointer; color: #6c757d;">🔍 Debug Info (Development Only)</summary>
+      <div style="margin-top: 1rem;">
+        <p><strong>Class:</strong> <%= @item.class.name %></p>
+        <p><strong>ID:</strong> <%= @item.id %></p>
+        <p><strong>Deleted At:</strong> <%= @item.deleted_at %></p>
+        <p><strong>Attributes:</strong></p>
+        <pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; overflow-x: auto;"><%= @item.attributes.to_yaml %></pre>
+      </div>
+    </details>
+  </div>
+<% end %>
