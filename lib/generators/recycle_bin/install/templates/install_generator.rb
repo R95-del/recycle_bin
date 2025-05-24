@@ -5,6 +5,7 @@ require 'rails/generators/migration'
 
 module RecycleBin
   module Generators
+    # Generator for installing RecycleBin in a Rails application
     class InstallGenerator < ::Rails::Generators::Base
       include Rails::Generators::Migration
 
@@ -17,6 +18,16 @@ module RecycleBin
       end
 
       def create_migration
+        print_installation_instructions
+      end
+
+      def add_route
+        route "mount RecycleBin::Engine => '/trash'"
+      end
+
+      private
+
+      def print_installation_instructions
         # For V1, we just add deleted_at to existing tables
         # Users will need to add it manually or we'll provide model generator later
         puts 'RecycleBin installed! 🗑️'
@@ -31,10 +42,6 @@ module RecycleBin
         puts '   end'
         puts ''
         puts '3. Visit /trash to see the web interface'
-      end
-
-      def add_route
-        route "mount RecycleBin::Engine => '/trash'"
       end
     end
   end

@@ -4,6 +4,9 @@ require_relative 'recycle_bin/version'
 require_relative 'recycle_bin/engine' if defined?(Rails)
 require_relative 'recycle_bin/soft_deletable'
 
+# RecycleBin provides soft delete functionality for Rails applications.
+# It adds a "recycle bin" feature where deleted records are marked as deleted
+# instead of being permanently removed from the database.
 module RecycleBin
   class Error < StandardError; end
 
