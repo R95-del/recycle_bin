@@ -2,6 +2,7 @@
 
 require_relative "recycle_bin/version"
 require_relative "recycle_bin/engine" if defined?(Rails)
+require_relative "recycle_bin/soft_deletable"
 
 module RecycleBin
   class Error < StandardError; end
