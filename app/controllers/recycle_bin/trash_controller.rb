@@ -2,24 +2,41 @@
 
 module RecycleBin
   class TrashController < ApplicationController
-    before_action :load_deleted_items, only: [:index]
+    before_action :load_deleted_items_with_pagination, only: [:index]
     before_action :find_item, only: %i[show restore destroy]
 
     def index
-      # Apply filters
-      @deleted_items = filter_items(@deleted_items)
+      # Apply filters to the relation before pagination
+      @filtered_items = filter_items_relation(@all_deleted_items_relation)
 
-      # Get model types for filter buttons
-      @model_types = @deleted_items.map { |item| item.class.name }.uniq.sort
+      # Get model types for filter buttons (from all items, not just current page)
+      @model_types = get_all_model_types
 
-      # Apply pagination (since @deleted_items is an Array, we need to handle this differently)
-      items_per_page = RecycleBin.config.items_per_page || 25
-      @deleted_items = @deleted_items.first(items_per_page)
+      # Apply pagination to the filtered relation
+      @current_page = (params[:page] || 1).to_i
+      @per_page = (params[:per_page] || RecycleBin.config.items_per_page || 25).to_i
+
+      # Ensure per_page is within reasonable bounds
+      @per_page = [[25, @per_page].max, 1000].min
+
+      # Calculate pagination
+      @total_count = @filtered_items.count
+      @total_pages = (@total_count.to_f / @per_page).ceil
+      @current_page = [@current_page, @total_pages].min if @total_pages.positive?
+      @current_page = 1 if @current_page < 1
+
+      # Get items for current page
+      offset = (@current_page - 1) * @per_page
+      @deleted_items = @filtered_items.offset(offset).limit(@per_page).to_a
+
+      # Sort by deletion time (most recent first) - only for current page to maintain performance
+      @deleted_items.sort_by!(&:deleted_at).reverse!
     end
 
     def show
       @original_attributes = @item.attributes.except('deleted_at')
       @associations = load_associations(@item)
+      @item_memory_size = calculate_item_memory_size(@item)
     end
 
     def restore
@@ -81,35 +98,52 @@ module RecycleBin
 
     private
 
-    def load_deleted_items
-      @deleted_items = []
+    def load_deleted_items_with_pagination
+      # Create a union query for all soft-deletable models
+      @all_deleted_items_relation = build_deleted_items_relation
+    end
 
-      # Use the safer method from RecycleBin module
+    def build_deleted_items_relation
+      relations = []
+
       RecycleBin.models_with_soft_delete.each do |model_name|
         model = model_name.constantize
-        if model.respond_to?(:deleted)
-          # Get up to 100 items per model to avoid memory issues
-          deleted_records = model.deleted.limit(100).to_a
-          @deleted_items.concat(deleted_records)
+        if model.respond_to?(:deleted) && model.table_exists?
+          # Add model type info to the query for filtering
+          relation = model.deleted.select("#{model.table_name}.*, '#{model_name}' as model_type")
+          relations << relation
         end
       rescue => e
         Rails.logger.debug "Skipping model #{model_name}: #{e.message}"
         next
       end
 
-      # Sort by deletion time (most recent first)
-      @deleted_items.sort_by!(&:deleted_at).reverse!
+      # If we have relations, combine them; otherwise return empty relation
+      if relations.any?
+        # For now, we'll work with arrays since UNION queries are complex across different models
+        # Convert relations to arrays and combine
+        combined_items = []
+        relations.each do |relation|
+          combined_items.concat(relation.to_a)
+        end
+
+        # Return a custom object that acts like an ActiveRecord relation
+        DeletedItemsCollection.new(combined_items)
+      else
+        DeletedItemsCollection.new([])
+      end
     end
 
-    def filter_items(items)
-      items = filter_by_type(items) if params[:type].present?
-      items = filter_by_time(items) if params[:time].present?
-      items
+    def filter_items_relation(items_collection)
+      filtered_items = items_collection.items
+
+      filtered_items = filter_by_type(filtered_items) if params[:type].present?
+      filtered_items = filter_by_time(filtered_items) if params[:time].present?
+
+      DeletedItemsCollection.new(filtered_items)
     end
 
     def filter_by_type(items)
-      # RuboCop prefers this approach over direct class name comparison
-      # We need to compare against the string parameter from URL params
       target_class_name = params[:type]
       items.select { |item| item.class.name == target_class_name }
     end
@@ -123,6 +157,11 @@ module RecycleBin
                     end
 
       items.select { |item| item.deleted_at >= cutoff_time }
+    end
+
+    def get_all_model_types
+      all_items = build_deleted_items_relation.items
+      all_items.map { |item| item.class.name }.uniq.sort
     end
 
     def find_item
@@ -169,6 +208,13 @@ module RecycleBin
       end
     end
 
+    def calculate_item_memory_size(item)
+      # Simple calculation of item memory footprint
+      item.attributes.to_s.bytesize
+    rescue
+      0
+    end
+
     def parse_bulk_selection
       selected_items = extract_selected_items
       return [] unless selected_items.is_a?(Array)
@@ -203,11 +249,55 @@ module RecycleBin
       [model_class, id.to_i]
     end
 
-    # Helper method to generate trash index path
     def trash_index_path
       recycle_bin.root_path
     rescue StandardError
       root_path
+    end
+  end
+
+  # Helper class to work with combined deleted items from different models
+  class DeletedItemsCollection
+    attr_reader :items
+
+    def initialize(items)
+      @items = items || []
+    end
+
+    def count
+      @items.count
+    end
+
+    def offset(num)
+      DeletedItemsCollection.new(@items.drop(num))
+    end
+
+    def limit(num)
+      DeletedItemsCollection.new(@items.first(num))
+    end
+
+    def to_a
+      @items
+    end
+
+    def each(&block)
+      @items.each(&block)
+    end
+
+    def map(&block)
+      @items.map(&block)
+    end
+
+    def select(&block)
+      DeletedItemsCollection.new(@items.select(&block))
+    end
+
+    def empty?
+      @items.empty?
+    end
+
+    def any?
+      @items.any?
     end
   end
 end
