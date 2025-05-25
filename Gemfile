@@ -8,11 +8,11 @@ gemspec
 gem 'rake', '~> 13.0'
 gem 'rspec', '~> 3.0'
 
-# Development dependencies
+# Development dependencies - MATCHING gemspec versions
 group :development, :test do
   gem 'factory_bot_rails', '~> 6.2'
-  gem 'rspec-rails', '>= 6.0'
-  gem 'sqlite3', '~> 2.0'
+  gem 'rspec-rails', '>= 6.0'  # Now matches gemspec
+  gem 'sqlite3', '~> 2.0'      # Now matches gemspec
 end
 
 group :development do
