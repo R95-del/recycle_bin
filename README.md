@@ -1,4 +1,28 @@
-# RecycleBin 🗑️
+<div align="center">
+  <img src="https://recyclebin.vercel.app/logo.svg" alt="RecycleBin Logo" width="120" height="120">
+  <h1>🗑️ RecycleBin</h1>
+  <p><strong>Elegant soft delete solution for Ruby on Rails applications</strong></p>
+  <p>
+    <a href="https://rubygems.org/gems/recycle_bin">
+      <img src="https://img.shields.io/gem/v/recycle_bin?style=for-the-badge&logo=rubygems&logoColor=white&color=667eea" alt="Gem Version">
+    </a>
+    <a href="https://github.com/R95-del/recycle_bin/actions">
+      <img src="https://img.shields.io/github/actions/workflow/status/R95-del/recycle_bin/main.yml?style=for-the-badge&logo=github&logoColor=white&color=28a745" alt="CI Status">
+    </a>
+    <a href="https://github.com/R95-del/recycle_bin/discussions">
+      <img src="https://img.shields.io/github/discussions/R95-del/recycle_bin?style=for-the-badge&logo=github&logoColor=white&color=007bff" alt="GitHub Discussions">
+    </a>
+    <a href="https://github.com/R95-del/recycle_bin/blob/main/LICENSE.txt">
+      <img src="https://img.shields.io/github/license/R95-del/recycle_bin?style=for-the-badge&color=764ba2" alt="MIT License">
+    </a>
+  </p>
+  <p>
+    <a href="https://recyclebin.vercel.app">📖 Documentation</a> •
+    <a href="https://github.com/R95-del/recycle_bin/blob/main/CHANGELOG.md">📋 Changelog</a> •
+    <a href="https://github.com/R95-del/recycle_bin/discussions">💬 Discussions</a> •
+    <a href="https://rubygems.org/gems/recycle_bin">💎 RubyGems</a>
+  </p>
+</div>
 
 A simple and elegant soft delete solution for Rails applications with a beautiful web interface to manage your deleted records.
 
