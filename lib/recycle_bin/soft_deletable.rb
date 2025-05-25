@@ -19,6 +19,7 @@ module RecycleBin
         scope :deleted, -> { unscope(where: :deleted_at).where.not(deleted_at: nil) }
         scope :not_deleted, -> { where(deleted_at: nil) }
         scope :with_deleted, -> { unscope(where: :deleted_at) }
+        scope :only_deleted, -> { unscope(where: :deleted_at).where.not(deleted_at: nil) }
       end
     end
 
@@ -40,6 +41,11 @@ module RecycleBin
 
         deleted
       end
+
+      # Find deleted records safely (bypasses default scope)
+      def find_deleted
+        unscoped.where.not(deleted_at: nil)
+      end
     end
 
     # Instance methods
@@ -47,10 +53,12 @@ module RecycleBin
       return false if deleted?
 
       if respond_to?(:update_column)
+        # Use update_column to bypass validations and callbacks
         update_column(:deleted_at, Time.current)
       elsif respond_to?(:deleted_at=)
         # For non-ActiveRecord objects, just set the attribute
         self.deleted_at = Time.current
+        save if respond_to?(:save)
       end
     end
 
@@ -58,10 +66,12 @@ module RecycleBin
       return false unless deleted?
 
       if respond_to?(:update_column)
+        # Use update_column to bypass validations and callbacks
         update_column(:deleted_at, nil)
       elsif respond_to?(:deleted_at=)
         # For non-ActiveRecord objects, just set the attribute
         self.deleted_at = nil
+        save if respond_to?(:save)
       end
     end
 
@@ -76,12 +86,13 @@ module RecycleBin
 
     # For permanent deletion (use carefully!) - only for ActiveRecord
     def destroy!
-      raise NotImplementedError, 'destroy! method only available for ActiveRecord models' unless respond_to?(:super)
+      raise NotImplementedError, 'destroy! method only available for ActiveRecord models' unless respond_to?(:delete)
 
-      super # Call ActiveRecord's original destroy
+      # Use delete to bypass callbacks and directly remove from database
+      self.class.unscoped.where(id: id).delete_all
     end
 
-    # V1 helper for the trash controller
+    # Helper for the trash controller
     def recyclable_title
       # Try common title fields safely
       return try(:title) if respond_to?(:title) && try(:title).present?
