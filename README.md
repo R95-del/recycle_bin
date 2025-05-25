@@ -20,7 +20,7 @@ A simple and elegant soft delete solution for Rails applications with a beautifu
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'recycle_bin'
+gem 'recycle_bin', '~> 1.1'
 ```
 
 And then execute:
