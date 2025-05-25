@@ -4,9 +4,7 @@ require_relative 'recycle_bin/version'
 require_relative 'recycle_bin/soft_deletable'
 
 # Only require Rails components if Rails is present
-if defined?(Rails)
-  require_relative 'recycle_bin/engine'
-end
+require_relative 'recycle_bin/engine' if defined?(Rails)
 
 # RecycleBin provides soft delete functionality for Rails applications.
 # It adds a "recycle bin" feature where deleted records are marked as deleted
@@ -24,7 +22,7 @@ module RecycleBin
   end
 
   def self.config
-    @configuration ||= Configuration.new
+    @config ||= Configuration.new
   end
 
   # Simple stats for V1
@@ -40,37 +38,52 @@ module RecycleBin
   def self.count_deleted_items
     total = 0
     models_with_soft_delete.each do |model_name|
-      begin
-        model = model_name.constantize
-        total += model.deleted.count if model.respond_to?(:deleted)
-      rescue => e
-        Rails.logger.debug "Error counting deleted items for #{model_name}: #{e.message}" if defined?(Rails)
-      end
+      total += count_deleted_items_for_model(model_name)
     end
     total
   end
 
+  def self.count_deleted_items_for_model(model_name)
+    model = model_name.constantize
+    model.respond_to?(:deleted) ? model.deleted.count : 0
+  rescue StandardError => e
+    log_debug_message("Error counting deleted items for #{model_name}: #{e.message}")
+    0
+  end
+
   def self.models_with_soft_delete
-    return [] unless defined?(Rails) && Rails.application
-    
+    return [] unless rails_application_available?
+
     Rails.application.eager_load!
-    
+    find_soft_deletable_models
+  end
+
+  def self.rails_application_available?
+    defined?(Rails) && Rails.application
+  end
+
+  def self.find_soft_deletable_models
     ActiveRecord::Base.descendants.filter_map do |model|
-      # Skip abstract models and models without tables
-      next if model.abstract_class?
-      next unless model.table_exists?
-      
-      begin
-        # Check if model has deleted_at column and soft delete capability
-        if model.column_names.include?('deleted_at') && model.respond_to?(:deleted)
-          model.name
-        end
-      rescue => e
-        # Skip models that cause issues (like ActiveStorage::Record)
-        Rails.logger.debug "Skipping model #{model.name}: #{e.message}" if defined?(Rails)
-        nil
-      end
+      model_name_if_soft_deletable(model)
     end.compact
+  end
+
+  def self.model_name_if_soft_deletable(model)
+    return nil if model.abstract_class? || !model.table_exists?
+
+    model.name if model_has_soft_delete_capability?(model)
+  rescue StandardError => e
+    log_debug_message("Skipping model #{model.name}: #{e.message}")
+    nil
+  end
+
+  def self.model_has_soft_delete_capability?(model)
+    model.column_names.include?('deleted_at') && model.respond_to?(:deleted)
+  end
+
+  # Extract debug logging to reduce duplication
+  def self.log_debug_message(message)
+    Rails.logger.debug(message) if defined?(Rails) && Rails.logger
   end
 
   # Configuration class for RecycleBin

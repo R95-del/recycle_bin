@@ -3,11 +3,11 @@
 module RecycleBin
   class ApplicationController < ActionController::Base
     protect_from_forgery with: :exception
-    
+
     before_action :authorize_access
-    
+
     layout 'recycle_bin/application'
-    
+
     protected
 
     # Helper method to handle RecycleBin-specific errors gracefully
@@ -49,13 +49,13 @@ module RecycleBin
 
     def authorize_access
       return true unless RecycleBin.config.authorization_method
-      
-      unless instance_eval(&RecycleBin.config.authorization_method)
-        if defined?(main_app)
-          redirect_to main_app.root_path, alert: 'Access denied.'
-        else
-          render plain: 'Access denied.', status: :forbidden
-        end
+
+      return if instance_eval(&RecycleBin.config.authorization_method)
+
+      if defined?(main_app)
+        redirect_to main_app.root_path, alert: 'Access denied.'
+      else
+        render plain: 'Access denied.', status: :forbidden
       end
     end
 

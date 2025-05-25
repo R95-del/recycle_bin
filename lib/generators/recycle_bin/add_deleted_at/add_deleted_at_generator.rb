@@ -17,22 +17,22 @@ module RecycleBin
       end
 
       def create_migration
-        migration_template 'add_deleted_at_migration.rb.erb', 
-                          "db/migrate/add_deleted_at_to_#{table_name}.rb"
+        migration_template 'add_deleted_at_migration.rb.erb',
+                           "db/migrate/add_deleted_at_to_#{table_name}.rb"
       end
 
       def show_instructions
-        say ""
-        say "Next steps:", :green
-        say "1. Run the migration: rails db:migrate"
+        say ''
+        say 'Next steps:', :green
+        say '1. Run the migration: rails db:migrate'
         say "2. Include RecycleBin::SoftDeletable in your #{class_name} model:"
-        say ""
+        say ''
         say "   class #{class_name} < ApplicationRecord", :yellow
-        say "     include RecycleBin::SoftDeletable", :yellow
-        say "   end", :yellow
-        say ""
+        say '     include RecycleBin::SoftDeletable', :yellow
+        say '   end', :yellow
+        say ''
         say "3. Your #{class_name.downcase} records will now be soft deleted when you call .destroy"
-        say "4. Visit /recycle_bin to manage deleted items"
+        say '4. Visit /recycle_bin to manage deleted items'
       end
 
       private
