@@ -1,12 +1,12 @@
-<h2>Deleted Items (<%= @deleted_items.count %>)</h2>
+<h2>Deleted Items (<%= number_with_delimiter(@total_count) %>)</h2>
 
 <!-- Statistics Dashboard -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
   <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #667eea;">
-    <div style="font-size: 2rem; font-weight: bold; color: #667eea; margin-bottom: 8px;"><%= @deleted_items.count %></div>
-    <div style="color: #6c757d; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Items in Trash</div>
+    <div style="font-size: 2rem; font-weight: bold; color: #667eea; margin-bottom: 8px;"><%= number_with_delimiter(@total_count) %></div>
+    <div style="color: #6c757d; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Total Items in Trash</div>
     <div style="font-size: 0.8rem; margin-top: 8px; color: #28a745;">
-      <%= @deleted_items.select { |item| item.deleted_at > 1.day.ago }.count %> today
+      <%= @filtered_items.items.select { |item| item.deleted_at > 1.day.ago }.count %> deleted today
     </div>
   </div>
   
@@ -24,11 +24,19 @@
   
   <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #667eea;">
     <div style="font-size: 2rem; font-weight: bold; color: #667eea; margin-bottom: 8px;">
-      <%= @deleted_items.select { |item| item.deleted_at > 7.days.ago }.count %>
+      <%= @filtered_items.items.select { |item| item.deleted_at > 7.days.ago }.count %>
     </div>
     <div style="color: #6c757d; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">This Week</div>
     <div style="font-size: 0.8rem; margin-top: 8px;">
       Recent activity
+    </div>
+  </div>
+
+  <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #667eea;">
+    <div style="font-size: 2rem; font-weight: bold; color: #667eea; margin-bottom: 8px;"><%= @current_page %> / <%= @total_pages %></div>
+    <div style="color: #6c757d; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Current Page</div>
+    <div style="font-size: 0.8rem; margin-top: 8px;">
+      Showing <%= (@current_page - 1) * @per_page + 1 %>-<%= [(@current_page * @per_page), @total_count].min %> of <%= number_with_delimiter(@total_count) %>
     </div>
   </div>
 </div>
@@ -38,17 +46,22 @@
   <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
       <span style="font-weight: 500; color: #495057;">Filter by type:</span>
-      <a href="/recycle_bin/" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; <%= params[:type].blank? ? 'background: #667eea; color: white;' : 'color: #495057;' %>">All</a>
+      <%= link_to "All", recycle_bin.root_path(page: 1), 
+                  style: "display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; #{params[:type].blank? ? 'background: #667eea; color: white;' : 'color: #495057;'}" %>
       <% @model_types.each do |model_type| %>
-        <a href="/recycle_bin/?type=<%= model_type %>" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; <%= params[:type] == model_type ? 'background: #667eea; color: white;' : 'color: #495057;' %>"><%= model_type %></a>
+        <%= link_to model_type, recycle_bin.root_path(type: model_type, page: 1), 
+                    style: "display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; #{params[:type] == model_type ? 'background: #667eea; color: white;' : 'color: #495057;'}" %>
       <% end %>
     </div>
     
     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 15px;">
       <span style="font-weight: 500; color: #495057;">Time:</span>
-      <a href="/recycle_bin/?time=today" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; <%= params[:time] == 'today' ? 'background: #667eea; color: white;' : 'color: #495057;' %>">Today</a>
-      <a href="/recycle_bin/?time=week" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; <%= params[:time] == 'week' ? 'background: #667eea; color: white;' : 'color: #495057;' %>">This Week</a>
-      <a href="/recycle_bin/?time=month" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; <%= params[:time] == 'month' ? 'background: #667eea; color: white;' : 'color: #495057;' %>">This Month</a>
+      <%= link_to "Today", recycle_bin.root_path(time: 'today', page: 1), 
+                  style: "display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; #{params[:time] == 'today' ? 'background: #667eea; color: white;' : 'color: #495057;'}" %>
+      <%= link_to "This Week", recycle_bin.root_path(time: 'week', page: 1), 
+                  style: "display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; #{params[:time] == 'week' ? 'background: #667eea; color: white;' : 'color: #495057;'}" %>
+      <%= link_to "This Month", recycle_bin.root_path(time: 'month', page: 1), 
+                  style: "display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid #dee2e6; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; #{params[:time] == 'month' ? 'background: #667eea; color: white;' : 'color: #495057;'}" %>
     </div>
   </div>
 <% end %>
@@ -60,14 +73,14 @@
     <div id="bulk-actions" style="display: none; background: #fff3cd; padding: 16px 20px; border-bottom: 1px solid #ffeaa7; justify-content: space-between; align-items: center;">
       <span id="bulk-count" style="font-weight: 500; color: #856404;">0 items selected</span>
       <div style="display: flex; gap: 8px;">
-        <%= form_with url: "/recycle_bin/trash/bulk_restore", method: :patch, local: true, style: "display: inline;" do |form| %>
+        <%= form_with url: recycle_bin.bulk_restore_trash_index_path, method: :patch, local: true, style: "display: inline;" do |form| %>
           <input type="hidden" id="bulk-restore-items" name="selected_items" value="">
           <%= form.submit "↶ Restore Selected", 
                           style: "display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;",
                           onclick: "return handleBulkAction('restore')" %>
         <% end %>
         
-        <%= form_with url: "/recycle_bin/trash/bulk_destroy", method: :delete, local: true, style: "display: inline;" do |form| %>
+        <%= form_with url: recycle_bin.bulk_destroy_trash_index_path, method: :delete, local: true, style: "display: inline;" do |form| %>
           <input type="hidden" id="bulk-destroy-items" name="selected_items" value="">
           <%= form.submit "🗑️ Delete Selected", 
                           style: "display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;",
@@ -101,7 +114,8 @@
             </td>
             <td style="padding: 16px;">
               <div style="font-weight: 500; color: #495057; margin-bottom: 4px;">
-                <%= truncate(item.recyclable_title, length: 60) %>
+                <%= link_to truncate(item.recyclable_title, length: 60), recycle_bin.trash_path(item.class.name, item.id), 
+                            style: "color: #667eea; text-decoration: none;" %>
               </div>
               <small style="color: #6c757d;">ID: <%= item.id %></small>
             </td>
@@ -113,13 +127,13 @@
             </td>
             <td style="padding: 16px;">
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <%= form_with url: "/recycle_bin/trash/#{item.class.name}/#{item.id}/restore", method: :patch, local: true, style: "display: inline;" do |form| %>
+                <%= form_with url: recycle_bin.restore_trash_path(item.class.name, item.id), method: :patch, local: true, style: "display: inline;" do |form| %>
                   <%= form.submit "↶ Restore", 
                                   style: "display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500; cursor: pointer;",
                                   onclick: "return confirm('Restore this #{item.class.name.downcase}?')" %>
                 <% end %>
                 
-                <%= form_with url: "/recycle_bin/trash/#{item.class.name}/#{item.id}", method: :delete, local: true, style: "display: inline;" do |form| %>
+                <%= form_with url: recycle_bin.destroy_trash_path(item.class.name, item.id), method: :delete, local: true, style: "display: inline;" do |form| %>
                   <%= form.submit "🗑️ Delete", 
                                   style: "display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500; cursor: pointer;",
                                   onclick: "return confirm('Permanently delete this #{item.class.name.downcase}? This cannot be undone!')" %>
@@ -132,20 +146,97 @@
     </table>
   </div>
 
+  <!-- Pagination -->
+  <% if @total_pages > 1 %>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 30px 0; flex-wrap: wrap;">
+      <!-- Previous Button -->
+      <% if @current_page > 1 %>
+        <%= link_to "« Previous", recycle_bin.root_path(page: @current_page - 1, type: params[:type], time: params[:time]), 
+                    style: "padding: 8px 16px; border: 1px solid #dee2e6; color: #667eea; text-decoration: none; border-radius: 6px; font-weight: 500;" %>
+      <% else %>
+        <span style="padding: 8px 16px; border: 1px solid #dee2e6; color: #6c757d; border-radius: 6px; background: #f8f9fa;">« Previous</span>
+      <% end %>
+
+      <!-- Page Numbers -->
+      <% 
+        # Calculate page range to show
+        start_page = [@current_page - 2, 1].max
+        end_page = [@current_page + 2, @total_pages].min
+        
+        # Ensure we show at least 5 pages if available
+        if end_page - start_page < 4
+          if start_page == 1
+            end_page = [start_page + 4, @total_pages].min
+          else
+            start_page = [end_page - 4, 1].max
+          end
+        end
+      %>
+
+      <!-- First page if not in range -->
+      <% if start_page > 1 %>
+        <%= link_to "1", recycle_bin.root_path(page: 1, type: params[:type], time: params[:time]), 
+                    style: "padding: 8px 12px; border: 1px solid #dee2e6; color: #667eea; text-decoration: none; border-radius: 6px;" %>
+        <% if start_page > 2 %>
+          <span style="padding: 8px 12px; color: #6c757d;">...</span>
+        <% end %>
+      <% end %>
+
+      <!-- Page range -->
+      <% (start_page..end_page).each do |page| %>
+        <% if page == @current_page %>
+          <span style="padding: 8px 12px; background: #667eea; color: white; border-radius: 6px; font-weight: 500;"><%= page %></span>
+        <% else %>
+          <%= link_to page, recycle_bin.root_path(page: page, type: params[:type], time: params[:time]), 
+                      style: "padding: 8px 12px; border: 1px solid #dee2e6; color: #667eea; text-decoration: none; border-radius: 6px;" %>
+        <% end %>
+      <% end %>
+
+      <!-- Last page if not in range -->
+      <% if end_page < @total_pages %>
+        <% if end_page < @total_pages - 1 %>
+          <span style="padding: 8px 12px; color: #6c757d;">...</span>
+        <% end %>
+        <%= link_to @total_pages, recycle_bin.root_path(page: @total_pages, type: params[:type], time: params[:time]), 
+                    style: "padding: 8px 12px; border: 1px solid #dee2e6; color: #667eea; text-decoration: none; border-radius: 6px;" %>
+      <% end %>
+
+      <!-- Next Button -->
+      <% if @current_page < @total_pages %>
+        <%= link_to "Next »", recycle_bin.root_path(page: @current_page + 1, type: params[:type], time: params[:time]), 
+                    style: "padding: 8px 16px; border: 1px solid #dee2e6; color: #667eea; text-decoration: none; border-radius: 6px; font-weight: 500;" %>
+      <% else %>
+        <span style="padding: 8px 16px; border: 1px solid #dee2e6; color: #6c757d; border-radius: 6px; background: #f8f9fa;">Next »</span>
+      <% end %>
+    </div>
+
+    <!-- Per Page Options -->
+    <div style="text-align: center; margin-bottom: 20px;">
+      <span style="color: #6c757d; margin-right: 10px;">Items per page:</span>
+      <% [25, 50, 100, 250].each do |per_page_option| %>
+        <% if per_page_option == @per_page %>
+          <span style="padding: 4px 8px; background: #667eea; color: white; border-radius: 4px; margin: 0 2px; font-size: 14px;"><%= per_page_option %></span>
+        <% else %>
+          <%= link_to per_page_option, recycle_bin.root_path(page: 1, per_page: per_page_option, type: params[:type], time: params[:time]), 
+                      style: "padding: 4px 8px; border: 1px solid #dee2e6; color: #667eea; text-decoration: none; border-radius: 4px; margin: 0 2px; font-size: 14px;" %>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
   <div style="text-align: center; padding: 20px; color: #6c757d;">
-    Showing <%= @deleted_items.count %> items
+    Showing <%= (@current_page - 1) * @per_page + 1 %>-<%= [(@current_page * @per_page), @total_count].min %> of <%= number_with_delimiter(@total_count) %> items
   </div>
 
 <% else %>
   <div class="empty-state">
     <div style="font-size: 48px; margin-bottom: 20px;">🎉</div>
-    <h3>Your recycle bin is empty!</h3>
-    <p>Deleted items will appear here and can be restored or permanently removed.</p>
+    <h3>No items match your filters!</h3>
+    <p>Try adjusting your filters or check back later for deleted items.</p>
     
     <div style="margin-top: 30px;">
-      <a href="/recycle_bin/" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: #667eea; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
-        🔄 Refresh
-      </a>
+      <%= link_to "Clear Filters", recycle_bin.root_path, 
+                  style: "display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: #667eea; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;" %>
     </div>
   </div>
 <% end %>
