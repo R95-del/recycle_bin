@@ -17,36 +17,9 @@ module RecycleBin
     # This ensures consistent error handling across all RecycleBin controllers
     # @param error [StandardError] The error that occurred
     def handle_recycle_bin_error(error)
-      # Log the error for debugging purposes
-      Rails.logger&.error "RecycleBin Error: #{error.message}"
-      Rails.logger.error error.backtrace.join("\n") if Rails.logger && error.backtrace
-
-      # Provide user-friendly error messages
-      error_message = case error
-                      when ActiveRecord::RecordNotFound
-                        'The requested item could not be found.'
-                      when NameError
-                        'Invalid model type specified.'
-                      when NoMethodError
-                        'This operation is not supported for this item type.'
-                      else
-                        'An unexpected error occurred. Please try again.'
-                      end
-
-      # Handle both HTML and JSON requests appropriately
-      respond_to do |format|
-        format.html do
-          flash[:error] = error_message
-          redirect_to recycle_bin.trash_index_path
-        end
-        format.json do
-          render json: {
-            message: error_message,
-            status: 'error',
-            error_type: error.class.name
-          }, status: :internal_server_error
-        end
-      end
+      log_error(error)
+      error_message = user_friendly_error_message(error)
+      respond_with_error(error_message)
     end
 
     # Helper method to check if the current request is for JSON
@@ -62,14 +35,9 @@ module RecycleBin
     def safe_constantize_model(model_name)
       return nil unless model_name.present?
 
-      begin
-        model_class = model_name.constantize
-        # Ensure it's an ActiveRecord model
-        return model_class if model_class < ActiveRecord::Base
-      rescue NameError
-        # Invalid model name
-      end
-
+      model_class = model_name.constantize
+      model_class < ActiveRecord::Base ? model_class : nil
+    rescue NameError
       nil
     end
 
@@ -80,6 +48,48 @@ module RecycleBin
       return 'N/A' unless timestamp
 
       timestamp.strftime('%B %d, %Y at %I:%M %p')
+    end
+
+    private
+
+    def log_error(error)
+      return unless Rails.logger
+
+      Rails.logger.error "RecycleBin Error: #{error.message}"
+      Rails.logger.error error.backtrace.join("\n") if error.backtrace
+    end
+
+    def user_friendly_error_message(error)
+      case error
+      when ActiveRecord::RecordNotFound
+        'The requested item could not be found.'
+      when NameError
+        'Invalid model type specified.'
+      when NoMethodError
+        'This operation is not supported for this item type.'
+      else
+        'An unexpected error occurred. Please try again.'
+      end
+    end
+
+    def respond_with_error(message)
+      respond_to do |format|
+        format.html { redirect_with_flash_error(message) }
+        format.json { render_json_error(message) }
+      end
+    end
+
+    def redirect_with_flash_error(message)
+      flash[:error] = message
+      redirect_to recycle_bin.trash_index_path
+    end
+
+    def render_json_error(message)
+      render json: {
+        message: message,
+        status: 'error',
+        error_type: 'RecycleBinError'
+      }, status: :internal_server_error
     end
   end
 end

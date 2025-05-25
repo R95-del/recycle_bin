@@ -4,52 +4,35 @@ module RecycleBin
   # Main controller for handling trash/recycle bin operations
   # Provides CRUD operations for soft-deleted records
   class TrashController < ApplicationController
-    # Set up callbacks for actions that need specific trashed items
     before_action :set_trashed_item, only: %i[show restore destroy]
-    # Authenticate user if authentication system is available
-    # before_action :authenticate_user!, if: :user_authentication_required?
-    # Handle errors gracefully
     rescue_from StandardError, with: :handle_recycle_bin_error
 
     # GET /recycle_bin/trash
-    # Lists all trashed items from all models that include SoftDeletable
     def index
-      # Fetch all trashed items across all models
       @trashed_items = fetch_all_trashed_items
-      # Add pagination support if Kaminari gem is available
-      @trashed_items = @trashed_items.page(params[:page]).per(20) if defined?(Kaminari)
+      @trashed_items = paginate_items(@trashed_items)
 
-      # Always return JSON for now (since we don't have views yet)
       render json: format_trashed_items_for_json(@trashed_items)
     end
 
     # GET /recycle_bin/trash/:model_type/:id
-    # Shows details of a specific trashed item
     def show
-      # @trashed_item is set by before_action callback
-      # Always return JSON for now (since we don't have views yet)
       render json: format_single_item_for_json(@trashed_item)
     end
 
     # PATCH /recycle_bin/trash/:model_type/:id/restore
-    # Restores a trashed item back to active state
     def restore
-      # Check if the item supports restoration
-      if @trashed_item.respond_to?(:restore)
-        @trashed_item.restore
-      else
-        # For now, manually restore by setting deleted_at to nil
-        @trashed_item.update!(deleted_at: nil)
-      end
+      restore_item(@trashed_item)
       success_message = "#{@trashed_item.class.name} has been restored successfully."
       render json: { message: success_message, status: 'success' }
-    rescue StandardError => e
-      render json: { message: "Unable to restore this item: #{e.message}", status: 'error' },
-             status: :unprocessable_entity
+    rescue => e
+      render json: {
+        message: "Unable to restore this item: #{e.message}",
+        status: 'error'
+      }, status: :unprocessable_entity
     end
 
     # DELETE /recycle_bin/trash/:model_type/:id
-    # Permanently deletes a trashed item (cannot be undone)
     def destroy
       model_name = @trashed_item.class.name
       @trashed_item.destroy!
@@ -58,154 +41,196 @@ module RecycleBin
     end
 
     # PATCH /recycle_bin/trash/bulk_restore
-    # Restores multiple trashed items at once
-    # Expects: model_type and comma-separated ids
     def bulk_restore
-      model_class = params[:model_type].constantize
-      ids = params[:ids].split(',')
-
-      restored_count = 0
-      ids.each do |id|
-        item = model_class.unscoped.where.not(deleted_at: nil).find_by(id: id)
-        next unless item
-
-        if item.respond_to?(:restore)
-          item.restore
-        else
-          item.update!(deleted_at: nil)
-        end
-        restored_count += 1
-      end
-
-      success_message = "#{restored_count} items have been restored."
-      render json: { message: success_message, restored_count: restored_count, status: 'success' }
+      result = perform_bulk_operation(:restore)
+      render json: {
+        message: "#{result[:count]} items have been restored.",
+        restored_count: result[:count],
+        status: 'success'
+      }
     end
 
     # DELETE /recycle_bin/trash/bulk_destroy
-    # Permanently deletes multiple trashed items at once
-    # Expects: model_type and comma-separated ids
     def bulk_destroy
-      model_class = params[:model_type].constantize
-      ids = params[:ids].split(',')
-
-      destroyed_count = 0
-      ids.each do |id|
-        item = model_class.unscoped.where.not(deleted_at: nil).find_by(id: id)
-        if item
-          item.destroy!
-          destroyed_count += 1
-        end
-      end
-
-      success_message = "#{destroyed_count} items have been permanently deleted."
-      render json: { message: success_message, destroyed_count: destroyed_count, status: 'success' }
+      result = perform_bulk_operation(:destroy)
+      render json: {
+        message: "#{result[:count]} items have been permanently deleted.",
+        destroyed_count: result[:count],
+        status: 'success'
+      }
     end
 
     private
 
-    # Find and set the trashed item based on model_type and id parameters
-    # Used by before_action for show, restore, and destroy actions
     def set_trashed_item
       model_class = params[:model_type].constantize
-      @trashed_item = model_class.unscoped.where.not(deleted_at: nil).find(params[:id])
+      @trashed_item = find_trashed_item(model_class, params[:id])
     rescue ActiveRecord::RecordNotFound
       render json: { message: 'Item not found in trash.', status: 'error' }, status: :not_found
     rescue NameError
       render json: { message: 'Invalid model type specified.', status: 'error' }, status: :bad_request
     end
 
-    # Fetches all trashed items from all models that include SoftDeletable
-    # Returns an array of hashes with item details
+    def find_trashed_item(model_class, id)
+      model_class.unscoped.where.not(deleted_at: nil).find(id)
+    end
+
     def fetch_all_trashed_items
       trashed_items = []
 
-      # Get all models that include SoftDeletable
       soft_deletable_models.each do |model_class|
-        # Fetch deleted records with a reasonable limit to prevent memory issues
-        # Use unscoped to bypass the default scope that excludes deleted records
-        deleted_records = model_class.unscoped.where.not(deleted_at: nil).limit(100)
-        deleted_records.each do |record|
-          trashed_items << {
-            id: record.id,
-            model_type: model_class.name,
-            model_name: model_class.name.humanize,
-            display_name: record_display_name(record),
-            deleted_at: record.deleted_at,
-            record: record
-          }
-        end
-      rescue StandardError => e
-        # Skip models that cause errors (like ActionText internal models)
-        Rails.logger&.warn "Skipping model #{model_class.name}: #{e.message}"
-        next
+        items = fetch_model_trashed_items(model_class)
+        trashed_items.concat(items)
       end
 
-      # Sort by deleted_at desc (most recently deleted first)
-      trashed_items.sort_by { |item| item[:deleted_at] }.reverse
+      sort_trashed_items(trashed_items)
     end
 
-    # Discovers all ActiveRecord models that include RecycleBin::SoftDeletable
-    # Returns an array of model classes
+    def fetch_model_trashed_items(model_class)
+      deleted_records = model_class.unscoped.where.not(deleted_at: nil).limit(100)
+      build_trashed_items_array(deleted_records)
+    rescue => e
+      log_model_skip_warning(model_class, e)
+      []
+    end
+
+    def build_trashed_items_array(records)
+      records.map do |record|
+        {
+          id: record.id,
+          model_type: record.class.name,
+          model_name: record.class.name.humanize,
+          display_name: record_display_name(record),
+          deleted_at: record.deleted_at,
+          record: record
+        }
+      end
+    end
+
+    def sort_trashed_items(items)
+      items.sort_by { |item| item[:deleted_at] }.reverse
+    end
+
     def soft_deletable_models
       models = []
       Rails.application.eager_load!
 
       ActiveRecord::Base.descendants.each do |model|
-        # Skip abstract models and models without proper table setup
-        next if model.abstract_class?
-
-        # Skip ActionText internal models
-        next if model.name.start_with?('ActionText::', 'ActionMailbox::', 'ActiveStorage::')
-
-        # Skip models that don't have a table configured
-        begin
-          next unless model.table_exists?
-        rescue StandardError => e
-          Rails.logger&.warn "Skipping model #{model.name}: #{e.message}"
-          next
-        end
-
-        # Only include models that have deleted_at column
-        models << model if model.column_names.include?('deleted_at')
+        models << model if valid_soft_deletable_model?(model)
       end
 
       models
-    rescue StandardError => e
-      Rails.logger&.error "Error discovering soft deletable models: #{e.message}"
+    rescue => e
+      log_model_discovery_error(e)
       []
     end
 
-    # Generates a user-friendly display name for a record
-    # Tries common attributes before falling back to "ModelName #ID"
+    def valid_soft_deletable_model?(model)
+      return false if model.abstract_class?
+      return false if internal_rails_model?(model)
+      return false unless model_has_valid_table?(model)
+
+      model.column_names.include?('deleted_at')
+    end
+
+    def internal_rails_model?(model)
+      model.name.start_with?('ActionText::', 'ActionMailbox::', 'ActiveStorage::')
+    end
+
+    def model_has_valid_table?(model)
+      model.table_exists?
+    rescue => e
+      log_model_skip_warning(model, e)
+      false
+    end
+
     def record_display_name(record)
-      # Try common attribute names for display
-      %i[name title subject email username].each do |attr|
-        return record.send(attr) if record.respond_to?(attr) && record.send(attr).present?
+      display_attributes = %i[name title subject email username]
+
+      display_attributes.each do |attr|
+        value = get_record_attribute_value(record, attr)
+        return value if value.present?
       end
 
-      # Fallback to model name with ID
       "#{record.class.name} ##{record.id}"
     end
 
-    # Formats trashed items array for JSON API response
+    def get_record_attribute_value(record, attribute)
+      return nil unless record.respond_to?(attribute)
+
+      record.send(attribute)
+    end
+
+    def restore_item(item)
+      if item.respond_to?(:restore)
+        item.restore
+      else
+        item.update!(deleted_at: nil)
+      end
+    end
+
+    def perform_bulk_operation(operation)
+      model_class = params[:model_type].constantize
+      ids = parse_bulk_ids
+      count = 0
+
+      ids.each do |id|
+        item = find_bulk_item(model_class, id)
+        next unless item
+
+        perform_item_operation(item, operation)
+        count += 1
+      end
+
+      { count: count }
+    end
+
+    def parse_bulk_ids
+      params[:ids].split(',')
+    end
+
+    def find_bulk_item(model_class, id)
+      model_class.unscoped.where.not(deleted_at: nil).find_by(id: id)
+    end
+
+    def perform_item_operation(item, operation)
+      case operation
+      when :restore
+        restore_item(item)
+      when :destroy
+        item.destroy!
+      end
+    end
+
+    def paginate_items(items)
+      return items unless defined?(Kaminari)
+
+      items.page(params[:page]).per(20)
+    end
+
     def format_trashed_items_for_json(items)
       {
-        trashed_items: items.map do |item|
-          {
-            id: item[:id],
-            model_type: item[:model_type],
-            model_name: item[:model_name],
-            display_name: item[:display_name],
-            deleted_at: item[:deleted_at],
-            restore_url: restore_trash_item_url(item[:model_type], item[:id]),
-            destroy_url: destroy_trash_item_url(item[:model_type], item[:id])
-          }
-        end,
+        trashed_items: build_trashed_items_json(items),
         total_count: items.size
       }
     end
 
-    # Formats a single trashed item for JSON API response
+    def build_trashed_items_json(items)
+      items.map { |item| build_single_trashed_item_json(item) }
+    end
+
+    def build_single_trashed_item_json(item)
+      {
+        id: item[:id],
+        model_type: item[:model_type],
+        model_name: item[:model_name],
+        display_name: item[:display_name],
+        deleted_at: item[:deleted_at],
+        restore_url: restore_trash_item_url(item[:model_type], item[:id]),
+        destroy_url: destroy_trash_item_url(item[:model_type], item[:id])
+      }
+    end
+
     def format_single_item_for_json(item)
       {
         id: item.id,
@@ -217,6 +242,18 @@ module RecycleBin
         restore_url: restore_trash_item_url(item.class.name, item.id),
         destroy_url: destroy_trash_item_url(item.class.name, item.id)
       }
+    end
+
+    def log_model_skip_warning(model_class, error)
+      return unless Rails.logger
+
+      Rails.logger.warn "Skipping model #{model_class.name}: #{error.message}"
+    end
+
+    def log_model_discovery_error(error)
+      return unless Rails.logger
+
+      Rails.logger.error "Error discovering soft deletable models: #{error.message}"
     end
   end
 end
