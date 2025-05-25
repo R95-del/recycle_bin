@@ -9,7 +9,14 @@ gem 'rake', '~> 13.0'
 gem 'rspec', '~> 3.0'
 
 # Development dependencies
-gem 'factory_bot_rails'
-gem 'rspec-rails'
-gem 'rubocop', '~> 1.21'
-gem 'sqlite3'
+group :development, :test do
+  gem 'factory_bot_rails', '~> 6.2'
+  gem 'rspec-rails', '>= 6.0'
+  gem 'sqlite3', '~> 2.0'
+end
+
+group :development do
+  gem 'rubocop', '~> 1.50', require: false
+  gem 'rubocop-rails', '~> 2.19', require: false
+  gem 'rubocop-rspec', '~> 2.20', require: false
+end

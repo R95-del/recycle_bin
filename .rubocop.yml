@@ -30,9 +30,9 @@ Metrics/MethodLength:
     - 'lib/generators/**/*'
     - 'app/helpers/**/*'
 
-# We want documentation for public APIs but not necessarily for internal classes
+# Documentation is not required for this gem
 Style/Documentation:
-  Enabled: true
+  Enabled: false
 
 Metrics/ClassLength:
   Max: 250
@@ -53,6 +53,9 @@ Metrics/CyclomaticComplexity:
 Metrics/PerceivedComplexity:
   Max: 10
 
+Metrics/ModuleLength:
+  Max: 150
+
 # Allow longer lines for readability
 Layout/LineLength:
   Max: 120
@@ -65,10 +68,6 @@ Layout/EmptyLinesAroundClassBody:
 
 # Allow empty lines around module body
 Layout/EmptyLinesAroundModuleBody:
-  Enabled: false
-
-# Documentation is not required for this gem
-Style/Documentation:
   Enabled: false
 
 # Allow frozen string literal comments
@@ -87,4 +86,9 @@ Style/For:
 # Allow multiple assignments
 Style/ParallelAssignment:
   Enabled: false
-  
+
+# Disable class equality comparison cop for controllers
+# We need to compare class names as strings when filtering by URL parameters
+Style/ClassEqualityComparison:
+  Exclude:
+    - 'app/controllers/**/*'

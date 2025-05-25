@@ -432,6 +432,49 @@
         .table td {
           padding: 0.5rem;
         }
+        
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .card-header {
+          flex-direction: column;
+          gap: 1rem;
+          align-items: flex-start;
+        }
+        
+        .card-actions {
+          width: 100%;
+          justify-content: flex-start;
+        }
+      }
+      
+      /* Stack table cells on very small screens */
+      @media (max-width: 480px) {
+        .table thead {
+          display: none;
+        }
+        
+        .table tr {
+          display: block;
+          margin-bottom: 1rem;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .table td {
+          display: block;
+          padding: 0.5rem 1rem;
+          border: none;
+          border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .table td:before {
+          content: attr(data-label) ": ";
+          font-weight: bold;
+          color: #495057;
+        }
       }
       
       /* Loading States */
@@ -470,63 +513,6 @@
         white-space: nowrap;
         z-index: 1000;
       }
-
-    /* Additional Mobile Styles */
-    @media (max-width: 640px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      
-      .table th,
-      .table td {
-        padding: 0.5rem 0.25rem;
-        font-size: 0.8rem;
-      }
-      
-      .btn {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.8rem;
-      }
-      
-      .card-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-      }
-      
-      .card-actions {
-        width: 100%;
-        justify-content: flex-start;
-      }
-    }
-
-    /* Stack table cells on very small screens */
-    @media (max-width: 480px) {
-      .table thead {
-        display: none;
-      }
-      
-      .table tr {
-        display: block;
-        margin-bottom: 1rem;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      }
-      
-      .table td {
-        display: block;
-        padding: 0.5rem 1rem;
-        border: none;
-        border-bottom: 1px solid #f0f0f0;
-      }
-      
-      .table td:before {
-        content: attr(data-label) ": ";
-        font-weight: bold;
-        color: #495057;
-      }
-    }
     </style>
 
     <!-- Simple JavaScript for interactions -->
@@ -541,10 +527,12 @@
         function updateBulkActions() {
           const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
           if (checkedBoxes.length > 0) {
-            bulkActions.classList.add('show');
-            bulkCount.textContent = `${checkedBoxes.length} item${checkedBoxes.length > 1 ? 's' : ''} selected`;
+            bulkActions?.classList.add('show');
+            if (bulkCount) {
+              bulkCount.textContent = `${checkedBoxes.length} item${checkedBoxes.length > 1 ? 's' : ''} selected`;
+            }
           } else {
-            bulkActions.classList.remove('show');
+            bulkActions?.classList.remove('show');
           }
         }
         
@@ -602,8 +590,6 @@
                       class: ("active" if current_page?(recycle_bin.root_path)) %>
           <%= link_to "All Items", recycle_bin.trash_index_path, 
                       class: ("active" if current_page?(recycle_bin.trash_index_path)) %>
-          <%= link_to "Analytics", "#", class: "disabled" %>
-          <%= link_to "Settings", "#", class: "disabled" %>
         </nav>
       </div>
     </div>

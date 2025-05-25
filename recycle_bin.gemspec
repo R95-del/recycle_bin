@@ -15,21 +15,31 @@ Gem::Specification.new do |spec|
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 2.7.0'
 
+  # Specify which files should be added to the gem when it is released.
   spec.files = Dir.chdir(__dir__) do
     `git ls-files -z`.split("\x0").reject do |f|
+      # Exclude the gemspec file itself and development files
       (File.expand_path(f) == __FILE__) ||
-        f.start_with?(*%w[bin/ test/ spec/ features/ .git])
+        f.start_with?(*%w[bin/ test/ spec/ features/ .git .github]) ||
+        f.match?(/\A\./) ||          # Exclude dotfiles
+        f.end_with?('.gem') ||       # Exclude any .gem files
+        f.include?('Gemfile.lock')   # Exclude Gemfile.lock
     end
   end
 
   spec.require_paths = ['lib']
 
-  # V1 MVP Dependencies - Keep it minimal
+  # Runtime dependencies - Keep it minimal for V1
   spec.add_dependency 'rails', '>= 6.0'
 
-  # Development dependencies
-  spec.add_development_dependency 'factory_bot_rails'
-  spec.add_development_dependency 'rspec-rails'
-  spec.add_development_dependency 'sqlite3'
+  # Development dependencies with proper version constraints
+  spec.add_development_dependency 'factory_bot_rails', '~> 6.2'
+  spec.add_development_dependency 'rspec-rails', '>= 6.0'
+  spec.add_development_dependency 'sqlite3', '>= 2.1'
+
+  # Gem metadata
   spec.metadata['rubygems_mfa_required'] = 'true'
+  spec.metadata['homepage_uri'] = spec.homepage
+  spec.metadata['source_code_uri'] = 'https://github.com/R95-del/recycle_bin'
+  spec.metadata['changelog_uri'] = 'https://github.com/R95-del/recycle_bin/blob/main/CHANGELOG.md'
 end

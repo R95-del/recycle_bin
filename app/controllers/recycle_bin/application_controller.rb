@@ -1,21 +1,16 @@
 # frozen_string_literal: true
 
 module RecycleBin
-  # Base controller for the RecycleBin engine
-  # Inherits from ActionController::Base for standalone functionality
-  # All RecycleBin controllers inherit from this base controller
   class ApplicationController < ActionController::Base
-    # Skip CSRF protection for API operations since we're testing APIs
-    skip_before_action :verify_authenticity_token
+    protect_from_forgery with: :exception
 
-    # Add any common functionality for RecycleBin controllers here
-    # This controller provides shared methods and error handling for all RecycleBin controllers
+    before_action :authorize_access
+
+    layout 'recycle_bin/application'
 
     protected
 
     # Helper method to handle RecycleBin-specific errors gracefully
-    # This ensures consistent error handling across all RecycleBin controllers
-    # @param error [StandardError] The error that occurred
     def handle_recycle_bin_error(error)
       log_error(error)
       error_message = user_friendly_error_message(error)
@@ -23,15 +18,11 @@ module RecycleBin
     end
 
     # Helper method to check if the current request is for JSON
-    # Useful for determining response format in controllers
     def json_request?
       request.format.json?
     end
 
     # Helper method to safely constantize model names
-    # Prevents errors when invalid model names are passed
-    # @param model_name [String] The model name to constantize
-    # @return [Class, nil] The model class or nil if invalid
     def safe_constantize_model(model_name)
       return nil unless model_name.present?
 
@@ -42,15 +33,31 @@ module RecycleBin
     end
 
     # Helper method to format timestamps for consistent display
-    # @param timestamp [Time, DateTime] The timestamp to format
-    # @return [String] Formatted timestamp string
     def format_timestamp(timestamp)
       return 'N/A' unless timestamp
 
       timestamp.strftime('%B %d, %Y at %I:%M %p')
     end
 
+    # Helper to check current page for navigation
+    def current_page?(path)
+      request.path == path
+    end
+    helper_method :current_page?
+
     private
+
+    def authorize_access
+      return true unless RecycleBin.config.authorization_method
+
+      return if instance_eval(&RecycleBin.config.authorization_method)
+
+      if defined?(main_app)
+        redirect_to main_app.root_path, alert: 'Access denied.'
+      else
+        render plain: 'Access denied.', status: :forbidden
+      end
+    end
 
     def log_error(error)
       return unless Rails.logger
@@ -80,8 +87,8 @@ module RecycleBin
     end
 
     def redirect_with_flash_error(message)
-      flash[:error] = message
-      redirect_to recycle_bin.trash_index_path
+      flash[:alert] = message
+      redirect_to main_app.respond_to?(:recycle_bin_path) ? main_app.recycle_bin_path : root_path
     end
 
     def render_json_error(message)
