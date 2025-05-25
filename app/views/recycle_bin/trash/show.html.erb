@@ -1,6 +1,6 @@
 <!-- Breadcrumb -->
 <div style="margin-bottom: 2rem;">
-  <%= link_to "← Back to Dashboard", recycle_bin.trash_index_path, 
+  <%= link_to "← Back to Dashboard", recycle_bin.root_path, 
               style: "color: #667eea; text-decoration: none; font-weight: 500;" %>
 </div>
 
@@ -25,7 +25,7 @@
                   data: { confirm: "Restore this #{@item.class.name.downcase}?" } do %>
         ↶ Restore Item
       <% end %>
-      <%= link_to recycle_bin.trash_path(@item.class.name, @item), 
+      <%= link_to recycle_bin.destroy_trash_path(@item.class.name, @item), 
                   method: :delete,
                   class: "btn btn-danger",
                   data: { confirm: "Permanently delete this #{@item.class.name.downcase}? This cannot be undone!" } do %>
@@ -41,7 +41,7 @@
         🗑️ This item is in the recycle bin
       </span>
       <span class="timestamp">
-        Size: <%= number_to_human_size(@item.try(:size) || rand(1000..50000)) %> • 
+        Size: <%= number_to_human_size(@item_memory_size) %> • 
         ID: <%= @item.id %>
       </span>
     </div>
@@ -244,14 +244,14 @@
         ↶ Restore to Application
       <% end %>
       
-      <%= link_to recycle_bin.trash_path(@item.class.name, @item), 
+      <%= link_to recycle_bin.destroy_trash_path(@item.class.name, @item), 
                   method: :delete,
                   class: "btn btn-danger",
                   data: { confirm: "Permanently delete this #{@item.class.name.downcase}? This cannot be undone!" } do %>
         🗑️ Delete Permanently
       <% end %>
       
-      <%= link_to recycle_bin.trash_index_path, class: "btn btn-outline" do %>
+      <%= link_to recycle_bin.root_path, class: "btn btn-outline" do %>
         📋 Back to Dashboard
       <% end %>
       

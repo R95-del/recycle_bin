@@ -8,11 +8,12 @@ RecycleBin::Engine.routes.draw do
     collection do
       patch :bulk_restore
       delete :bulk_destroy
+      delete :cleanup_large_items
     end
   end
 
   # Custom routes for individual items with model type
-  get 'trash/:model_type/:id', to: 'trash#show', as: 'trash_item'
-  patch 'trash/:model_type/:id/restore', to: 'trash#restore'
-  delete 'trash/:model_type/:id', to: 'trash#destroy'
+  get 'trash/:model_type/:id', to: 'trash#show', as: 'trash'
+  patch 'trash/:model_type/:id/restore', to: 'trash#restore', as: 'restore_trash'
+  delete 'trash/:model_type/:id', to: 'trash#destroy', as: 'destroy_trash'
 end
