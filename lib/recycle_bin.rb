@@ -19,10 +19,11 @@ module RecycleBin
   def self.configure
     self.configuration ||= Configuration.new
     yield(configuration) if block_given?
+    configuration
   end
 
   def self.config
-    @config ||= Configuration.new
+    configuration || (self.configuration = Configuration.new)
   end
 
   # Simple stats for V1
@@ -41,6 +42,9 @@ module RecycleBin
       total += count_deleted_items_for_model(model_name)
     end
     total
+  rescue StandardError => e
+    log_debug_message("Error counting deleted items: #{e.message}")
+    0
   end
 
   def self.count_deleted_items_for_model(model_name)
@@ -54,7 +58,9 @@ module RecycleBin
   def self.models_with_soft_delete
     return [] unless rails_application_available?
 
-    Rails.application.eager_load!
+    # In test environment, we might not need to eager load
+    Rails.application.eager_load! if Rails.application.respond_to?(:eager_load!)
+
     find_soft_deletable_models
   end
 
@@ -63,9 +69,14 @@ module RecycleBin
   end
 
   def self.find_soft_deletable_models
+    return [] unless defined?(ActiveRecord)
+
     ActiveRecord::Base.descendants.filter_map do |model|
       model_name_if_soft_deletable(model)
     end.compact
+  rescue StandardError => e
+    log_debug_message("Error finding soft deletable models: #{e.message}")
+    []
   end
 
   def self.model_name_if_soft_deletable(model)

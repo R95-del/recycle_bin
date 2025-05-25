@@ -34,8 +34,8 @@ Gem::Specification.new do |spec|
 
   # Development dependencies with proper version constraints
   spec.add_development_dependency 'factory_bot_rails', '~> 6.2'
-  spec.add_development_dependency 'rspec-rails', '~> 6.0'
-  spec.add_development_dependency 'sqlite3', '~> 1.4'
+  spec.add_development_dependency 'rspec-rails', '>= 6.0'
+  spec.add_development_dependency 'sqlite3', '>= 2.1'
 
   # Gem metadata
   spec.metadata['rubygems_mfa_required'] = 'true'
