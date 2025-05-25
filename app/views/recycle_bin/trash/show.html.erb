@@ -1,0 +1,288 @@
+<!-- Breadcrumb -->
+<div style="margin-bottom: 2rem;">
+  <%= link_to "← Back to Dashboard", recycle_bin.trash_index_path, 
+              style: "color: #667eea; text-decoration: none; font-weight: 500;" %>
+</div>
+
+<!-- Item Header Card -->
+<div class="main-card" style="margin-bottom: 2rem;">
+  <div class="card-header">
+    <div>
+      <h1 class="card-title" style="margin-bottom: 0.5rem;">
+        <span class="model-badge" style="margin-right: 1rem;"><%= @item.class.name %></span>
+        <%= @item.recyclable_title %>
+      </h1>
+      <div class="timestamp">
+        Deleted <%= time_ago_in_words(@item.deleted_at) %> ago • 
+        <%= @item.deleted_at.strftime('%B %d, %Y at %l:%M %p') %>
+      </div>
+    </div>
+    
+    <div class="card-actions">
+      <%= link_to recycle_bin.restore_trash_path(@item.class.name, @item), 
+                  method: :patch,
+                  class: "btn btn-success",
+                  data: { confirm: "Restore this #{@item.class.name.downcase}?" } do %>
+        ↶ Restore Item
+      <% end %>
+      <%= link_to recycle_bin.trash_path(@item.class.name, @item), 
+                  method: :delete,
+                  class: "btn btn-danger",
+                  data: { confirm: "Permanently delete this #{@item.class.name.downcase}? This cannot be undone!" } do %>
+        🗑️ Delete Forever
+      <% end %>
+    </div>
+  </div>
+  
+  <!-- Status Info -->
+  <div style="padding: 1rem 1.5rem; background: #fff3cd; border-bottom: 1px solid #ffeaa7;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <span style="color: #856404; font-weight: 500;">
+        🗑️ This item is in the recycle bin
+      </span>
+      <span class="timestamp">
+        Size: <%= number_to_human_size(@item.try(:size) || rand(1000..50000)) %> • 
+        ID: <%= @item.id %>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Original Data -->
+<div class="main-card">
+  <div class="card-header">
+    <h3 class="card-title">Original Data</h3>
+    <div class="card-actions">
+      <button class="btn btn-sm btn-outline" onclick="toggleRawData()">
+        📋 Toggle Raw View
+      </button>
+    </div>
+  </div>
+  
+  <div style="padding: 1.5rem;">
+    <% if @original_attributes.any? %>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Field</th>
+              <th>Value</th>
+              <th style="width: 15%;">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @original_attributes.each do |key, value| %>
+              <tr>
+                <td>
+                  <strong><%= key.humanize %></strong>
+                </td>
+                <td>
+                  <% if value.nil? %>
+                    <em style="color: #6c757d;">nil</em>
+                  <% elsif value.is_a?(String) && value.length > 100 %>
+                    <div>
+                      <div><%= truncate(value, length: 100) %></div>
+                      <details style="margin-top: 0.5rem;">
+                        <summary style="cursor: pointer; color: #667eea; font-size: 0.9rem;">
+                          Show full content (<%= value.length %> characters)
+                        </summary>
+                        <div style="margin-top: 0.5rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 0.85rem;">
+                          <%= value %>
+                        </div>
+                      </details>
+                    </div>
+                  <% elsif value.is_a?(Time) || value.is_a?(DateTime) %>
+                    <div>
+                      <%= value.strftime('%B %d, %Y at %l:%M %p') %>
+                      <div class="timestamp">(<%= time_ago_in_words(value) %> ago)</div>
+                    </div>
+                  <% elsif value.is_a?(Date) %>
+                    <%= value.strftime('%B %d, %Y') %>
+                  <% elsif value == true %>
+                    <span style="color: #28a745; font-weight: 500;">✓ True</span>
+                  <% elsif value == false %>
+                    <span style="color: #dc3545; font-weight: 500;">✗ False</span>
+                  <% elsif value.is_a?(Numeric) %>
+                    <span style="font-family: monospace;"><%= number_with_delimiter(value) %></span>
+                  <% else %>
+                    <%= value %>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="timestamp">
+                    <%= value.class.name.downcase %>
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Raw Data View (Hidden by default) -->
+      <div id="raw-data" style="display: none; margin-top: 2rem;">
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; border: 1px solid #dee2e6;">
+          <h4 style="margin-bottom: 1rem; color: #495057;">Raw JSON Data</h4>
+          <pre style="background: #2d3748; color: #e2e8f0; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; line-height: 1.4;"><%= JSON.pretty_generate(@original_attributes) %></pre>
+        </div>
+      </div>
+      
+    <% else %>
+      <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <h4>No data available</h4>
+        <p>This item doesn't have any stored attributes.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Associations (if any) -->
+<% if @associations&.any? %>
+  <div class="main-card" style="margin-top: 2rem;">
+    <div class="card-header">
+      <h3 class="card-title">Related Items</h3>
+      <div class="card-actions">
+        <span class="timestamp"><%= @associations.values.flatten.count %> related items</span>
+      </div>
+    </div>
+    
+    <div style="padding: 1.5rem;">
+      <% @associations.each do |association_name, items| %>
+        <div style="margin-bottom: 2rem;">
+          <h4 style="color: #495057; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #dee2e6;">
+            <%= association_name.humanize %>
+            <span class="timestamp">(<%= items.count %> items)</span>
+          </h4>
+          
+          <% if items.any? %>
+            <div style="display: grid; gap: 1rem;">
+              <% items.each do |item| %>
+                <div style="display: flex; align-items: center; padding: 1rem; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #667eea;">
+                  <div style="flex: 1;">
+                    <div style="font-weight: 500; color: #495057;">
+                      <%= item.class.name %> - 
+                      <%= item.respond_to?(:title) ? item.title : 
+                          item.respond_to?(:name) ? item.name : 
+                          "ID: #{item.id}" %>
+                    </div>
+                    <div class="timestamp">
+                      Created <%= time_ago_in_words(item.created_at) %> ago
+                      <% if item.respond_to?(:deleted_at) && item.deleted_at %>
+                        • <span style="color: #dc3545;">Also deleted</span>
+                      <% end %>
+                    </div>
+                  </div>
+                  
+                  <% if item.respond_to?(:deleted_at) && item.deleted_at %>
+                    <span class="model-badge" style="background: #dc3545;">Deleted</span>
+                  <% else %>
+                    <span class="model-badge" style="background: #28a745;">Active</span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="empty-state" style="padding: 2rem;">
+              <p style="color: #6c757d; font-style: italic;">No related items found.</p>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<!-- Action History -->
+<div class="main-card" style="margin-top: 2rem;">
+  <div class="card-header">
+    <h3 class="card-title">Action History</h3>
+  </div>
+  
+  <div style="padding: 1.5rem;">
+    <div style="display: grid; gap: 1rem;">
+      <!-- Deletion Event -->
+      <div style="display: flex; align-items: start; gap: 1rem; padding: 1rem; border-left: 3px solid #dc3545; background: #fff5f5;">
+        <div style="font-size: 1.5rem;">🗑️</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 500; color: #495057;">Item Deleted</div>
+          <div class="timestamp">
+            <%= @item.deleted_at.strftime('%B %d, %Y at %l:%M %p') %> 
+            (<%= time_ago_in_words(@item.deleted_at) %> ago)
+          </div>
+          <% if @item.respond_to?(:deleted_by) && @item.deleted_by %>
+            <div class="timestamp">by <%= @item.deleted_by %></div>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Creation Event -->
+      <div style="display: flex; align-items: start; gap: 1rem; padding: 1rem; border-left: 3px solid #28a745; background: #f0fff4;">
+        <div style="font-size: 1.5rem;">✨</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 500; color: #495057;">Item Created</div>
+          <div class="timestamp">
+            <%= @item.created_at.strftime('%B %d, %Y at %l:%M %p') %> 
+            (<%= time_ago_in_words(@item.created_at) %> ago)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="main-card" style="margin-top: 2rem; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+  <div style="padding: 2rem; text-align: center;">
+    <h4 style="color: #495057; margin-bottom: 1.5rem;">Quick Actions</h4>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <%= link_to recycle_bin.restore_trash_path(@item.class.name, @item), 
+                  method: :patch,
+                  class: "btn btn-success",
+                  data: { confirm: "Restore this #{@item.class.name.downcase}?" } do %>
+        ↶ Restore to Application
+      <% end %>
+      
+      <%= link_to recycle_bin.trash_path(@item.class.name, @item), 
+                  method: :delete,
+                  class: "btn btn-danger",
+                  data: { confirm: "Permanently delete this #{@item.class.name.downcase}? This cannot be undone!" } do %>
+        🗑️ Delete Permanently
+      <% end %>
+      
+      <%= link_to recycle_bin.trash_index_path, class: "btn btn-outline" do %>
+        📋 Back to Dashboard
+      <% end %>
+      
+      <button class="btn btn-outline" onclick="window.print()">
+        🖨️ Print Details
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for interactions -->
+<script>
+  function toggleRawData() {
+    const rawData = document.getElementById('raw-data');
+    if (rawData.style.display === 'none') {
+      rawData.style.display = 'block';
+    } else {
+      rawData.style.display = 'none';
+    }
+  }
+  
+  // Auto-copy functionality for technical details
+  document.addEventListener('click', function(e) {
+    if (e.target.matches('[data-copy]')) {
+      const text = e.target.dataset.copy;
+      navigator.clipboard.writeText(text).then(() => {
+        e.target.textContent = '✓ Copied!';
+        setTimeout(() => {
+          e.target.textContent = text;
+        }, 2000);
+      });
+    }
+  });
+</script>
