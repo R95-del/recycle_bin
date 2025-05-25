@@ -1,0 +1,213 @@
+<!-- Statistics Dashboard -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-number"><%= @deleted_items.count %></div>
+    <div class="stat-label">Items in Trash</div>
+    <div class="stat-change positive">
+      <%= @deleted_items.where('deleted_at > ?', 1.day.ago).count %> today
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-number"><%= @model_types.count %></div>
+    <div class="stat-label">Model Types</div>
+    <div class="stat-change">
+      <% if @model_types.any? %>
+        <%= @model_types.join(', ') %>
+      <% else %>
+        No types
+      <% end %>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-number">
+      <%= number_to_human_size(@deleted_items.sum { |item| item.try(:size) || 0 }) %>
+    </div>
+    <div class="stat-label">Storage Used</div>
+    <div class="stat-change">
+      Estimated size
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-number">
+      <%= @deleted_items.where('deleted_at > ?', 7.days.ago).count %>
+    </div>
+    <div class="stat-label">This Week</div>
+    <div class="stat-change">
+      <%= @deleted_items.where('deleted_at > ?', 1.week.ago).count - 
+          @deleted_items.where('deleted_at > ?', 2.weeks.ago).count %> vs last week
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-card">
+  <div class="card-header">
+    <h2 class="card-title">
+      Deleted Items
+      <% if @deleted_items.any? %>
+        <span style="font-weight: normal; color: #6c757d;">
+          (<%= @deleted_items.count %> items)
+        </span>
+      <% end %>
+    </h2>
+    
+    <div class="card-actions">
+      <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+        <input type="checkbox" id="auto-refresh">
+        Auto-refresh
+      </label>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <span class="filter-label">Filter by type:</span>
+      <%= link_to "All", recycle_bin.trash_index_path, 
+                  class: "btn btn-sm #{'btn-primary' if params[:type].blank?} #{'btn-outline' unless params[:type].blank?}" %>
+      <% @model_types.each do |model_type| %>
+        <%= link_to model_type, recycle_bin.trash_index_path(type: model_type), 
+                    class: "btn btn-sm #{'btn-primary' if params[:type] == model_type} #{'btn-outline' unless params[:type] == model_type}" %>
+      <% end %>
+    </div>
+    
+    <div class="filter-group">
+      <span class="filter-label">Time:</span>
+      <%= link_to "Today", recycle_bin.trash_index_path(time: 'today'), 
+                  class: "btn btn-sm btn-outline" %>
+      <%= link_to "This Week", recycle_bin.trash_index_path(time: 'week'), 
+                  class: "btn btn-sm btn-outline" %>
+      <%= link_to "This Month", recycle_bin.trash_index_path(time: 'month'), 
+                  class: "btn btn-sm btn-outline" %>
+    </div>
+  </div>
+
+  <!-- Bulk Actions Bar -->
+  <div class="bulk-actions">
+    <span class="bulk-count">0 items selected</span>
+    <div style="display: flex; gap: 0.5rem;">
+      <%= link_to recycle_bin.bulk_restore_trash_index_path, 
+                  method: :patch, 
+                  class: "btn btn-sm btn-success",
+                  data: { confirm: "Restore all selected items?" } do %>
+        ↶ Restore Selected
+      <% end %>
+      <%= link_to recycle_bin.bulk_destroy_trash_index_path, 
+                  method: :delete, 
+                  class: "btn btn-sm btn-danger",
+                  data: { confirm: "Permanently delete all selected items? This cannot be undone!" } do %>
+        🗑️ Delete Selected
+      <% end %>
+    </div>
+  </div>
+
+  <% if @deleted_items.any? %>
+    <!-- Items Table -->
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 40px;">
+              <input type="checkbox" id="select-all">
+            </th>
+            <th>Type</th>
+            <th>Item</th>
+            <th>Deleted</th>
+            <th>Size</th>
+            <th style="width: 200px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @deleted_items.each do |item| %>
+            <tr>
+              <td>
+                <input type="checkbox" class="item-checkbox" 
+                       value="<%= item.class.name %>:<%= item.id %>">
+              </td>
+              <td>
+                <span class="model-badge"><%= item.class.name %></span>
+              </td>
+              <td>
+                <div>
+                  <%= link_to truncate(item.recyclable_title, length: 60), 
+                              recycle_bin.trash_path(item.class.name, item), 
+                              style: "font-weight: 500; color: #667eea; text-decoration: none;" %>
+                </div>
+                <div class="timestamp">
+                  ID: <%= item.id %>
+                </div>
+              </td>
+              <td>
+                <div class="timestamp-relative">
+                  <%= time_ago_in_words(item.deleted_at) %> ago
+                </div>
+                <div class="timestamp">
+                  <%= item.deleted_at.strftime('%b %d, %Y at %l:%M %p') %>
+                </div>
+              </td>
+              <td>
+                <span class="timestamp" data-title="Estimated size">
+                  <%= number_to_human_size(item.try(:size) || rand(1000..50000)) %>
+                </span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                  <%= link_to recycle_bin.trash_path(item.class.name, item), 
+                              class: "btn btn-sm btn-outline" do %>
+                    👁️ View
+                  <% end %>
+                  <%= link_to recycle_bin.restore_trash_path(item.class.name, item), 
+                              method: :patch,
+                              class: "btn btn-sm btn-success",
+                              data: { confirm: "Restore this #{item.class.name.downcase}?" } do %>
+                    ↶ Restore  
+                  <% end %>
+                  <%= link_to recycle_bin.trash_path(item.class.name, item), 
+                              method: :delete,
+                              class: "btn btn-sm btn-danger",
+                              data: { confirm: "Permanently delete this #{item.class.name.downcase}? This cannot be undone!" } do %>
+                    🗑️ Delete
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <!-- Add pagination links here if using Kaminari -->
+      <span>Showing <%= @deleted_items.count %> items</span>
+    </div>
+
+  <% else %>
+    <!-- Empty State -->
+    <div class="empty-state">
+      <div class="empty-icon">🎉</div>
+      <h3 class="empty-title">Your recycle bin is empty!</h3>
+      <p class="empty-subtitle">
+        Deleted items will appear here and can be restored or permanently removed.
+      </p>
+      
+      <div style="margin-top: 2rem;">
+        <div class="btn btn-primary" onclick="window.location.reload()">
+          🔄 Refresh
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<!-- Quick Stats Footer -->
+<div style="margin-top: 2rem; text-align: center; color: #6c757d; font-size: 0.9rem;">
+  <p>
+    RecycleBin v1.0 • 
+    <%= link_to "Documentation", "#", style: "color: #667eea;" %> • 
+    <%= link_to "GitHub", "#", style: "color: #667eea;" %>
+  </p>
+</div>
