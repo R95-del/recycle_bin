@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Gradient for the main container -->
+    <linearGradient id="containerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient for the lid -->
+    <linearGradient id="lidGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b9cf7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#667eea;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Shadow filter -->
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="rgba(0,0,0,0.3)"/>
+    </filter>
+    
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#containerGradient)" filter="url(#dropShadow)" opacity="0.1"/>
+  
+  <!-- Main trash bin body -->
+  <rect x="60" y="80" width="80" height="90" rx="8" ry="8" fill="url(#containerGradient)" filter="url(#dropShadow)"/>
+  
+  <!-- Trash bin lid -->
+  <rect x="50" y="70" width="100" height="12" rx="6" ry="6" fill="url(#lidGradient)" filter="url(#dropShadow)"/>
+  
+  <!-- Lid handle -->
+  <rect x="90" y="55" width="20" height="8" rx="4" ry="4" fill="url(#lidGradient)"/>
+  <rect x="95" y="63" width="10" height="12" fill="url(#lidGradient)"/>
+  
+  <!-- Vertical lines on trash bin -->
+  <line x1="80" y1="90" x2="80" y2="155" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="100" y1="90" x2="100" y2="155" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="120" y1="90" x2="120" y2="155" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Restore arrow (curved arrow indicating recovery) -->
+  <g transform="translate(130, 40)" filter="url(#glow)">
+    <path d="M 0 15 Q 10 5 20 15 Q 15 10 15 20" stroke="#28a745" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <polygon points="12,18 18,18 15,24" fill="#28a745"/>
+  </g>
+  
+  <!-- Floating particles (representing restored items) -->
+  <circle cx="45" cy="50" r="3" fill="#28a745" opacity="0.7">
+    <animate attributeName="cy" values="50;45;50" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="155" cy="60" r="2" fill="#ffc107" opacity="0.8">
+    <animate attributeName="cy" values="60;55;60" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.8;0.4;0.8" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="40" cy="120" r="2.5" fill="#17a2b8" opacity="0.6">
+    <animate attributeName="cy" values="120;115;120" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Subtle highlight on the bin -->
+  <rect x="62" y="82" width="15" height="60" rx="4" ry="4" fill="rgba(255,255,255,0.2)"/>
+  
+  <!-- Brand text (small) -->
+  <text x="100" y="190" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="url(#containerGradient)">RecycleBin</text>
+</svg>
