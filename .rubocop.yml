@@ -58,7 +58,7 @@ Metrics/ModuleLength:
 
 # Allow longer lines for readability
 Layout/LineLength:
-  Max: 120
+  Max: 230
   Exclude:
     - 'spec/**/*'
 

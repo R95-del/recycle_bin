@@ -26,18 +26,14 @@ module RecycleBin
     class_methods do
       # Restore a record by ID (only for ActiveRecord models)
       def restore(id)
-        unless self < ActiveRecord::Base
-          raise NotImplementedError, 'restore method only available for ActiveRecord models'
-        end
+        raise NotImplementedError, 'restore method only available for ActiveRecord models' unless self < ActiveRecord::Base
 
         with_deleted.find(id).restore
       end
 
       # Get all deleted records (only for ActiveRecord models)
       def deleted_records
-        unless self < ActiveRecord::Base
-          raise NotImplementedError, 'deleted_records method only available for ActiveRecord models'
-        end
+        raise NotImplementedError, 'deleted_records method only available for ActiveRecord models' unless self < ActiveRecord::Base
 
         deleted
       end
