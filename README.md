@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="https://recyclebin.vercel.app/logo.svg" alt="RecycleBin Logo" width="120" height="120">
-  <h1>🗑️ RecycleBin</h1>
+  <h1>🗑️ RecycleBin Gem</h1>
+  <img src="https://raw.githubusercontent.com/R95-del/recycle_bin/main/docs/logo.svg" alt="RecycleBin Logo" width="120" height="120">
   <p><strong>Elegant soft delete solution for Ruby on Rails applications</strong></p>
   <p>
     <a href="https://rubygems.org/gems/recycle_bin">
