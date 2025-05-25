@@ -8,7 +8,7 @@ RSpec.describe RecycleBin do
 
   it 'has a version number' do
     expect(RecycleBin::VERSION).not_to be nil
-    expect(RecycleBin::VERSION).to eq('0.1.0')
+    expect(RecycleBin::VERSION).to eq('1.0.0')
   end
 
   describe '.config' do
