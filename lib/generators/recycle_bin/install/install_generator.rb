@@ -8,7 +8,7 @@ module RecycleBin
       desc 'Install RecycleBin in your Rails application'
 
       def create_initializer
-        create_file "config/initializers/recycle_bin.rb", <<~RUBY
+        create_file 'config/initializers/recycle_bin.rb', <<~RUBY
           # RecycleBin Configuration
           RecycleBin.configure do |config|
             # Enable web interface (default: true)
@@ -20,7 +20,7 @@ module RecycleBin
             # Auto-cleanup items after specified time (default: nil - disabled)
             # config.auto_cleanup_after = 30.days
 
-            # Method to get current user for audit trail  
+            # Method to get current user for audit trail#{'  '}
             # config.current_user_method = :current_user
 
             # Authorization callback - uncomment to restrict access
@@ -37,27 +37,45 @@ module RecycleBin
       end
 
       def print_installation_instructions
-        say "\n" + "="*60, :green
-        say "🗑️  RecycleBin installed successfully!", :green
-        say "="*60, :green
-        say ""
-        say "Next steps:", :yellow
-        say "1. Add deleted_at column to your models:"
-        say "   rails generate migration AddDeletedAtToUsers deleted_at:datetime:index"
-        say ""
-        say "2. Include the module in your models:"
-        say "   class User < ApplicationRecord"
-        say "     include RecycleBin::SoftDeletable"
-        say "   end"
-        say ""
-        say "3. Run migrations:"
-        say "   rails db:migrate"
-        say ""
-        say "4. Visit /recycle_bin to see the web interface"
-        say ""
-        say "Configuration file created at:"
-        say "   config/initializers/recycle_bin.rb"
-        say "="*60, :green
+        display_success_header
+        display_next_steps
+        display_configuration_info
+        display_success_footer
+      end
+
+      private
+
+      def display_success_header
+        say "\n#{'=' * 60}", :green
+        say '🗑️  RecycleBin installed successfully!', :green
+        say '=' * 60, :green
+        say ''
+      end
+
+      def display_next_steps
+        say 'Next steps:', :yellow
+        say '1. Add deleted_at column to your models:'
+        say '   rails generate migration AddDeletedAtToUsers deleted_at:datetime:index'
+        say ''
+        say '2. Include the module in your models:'
+        say '   class User < ApplicationRecord'
+        say '     include RecycleBin::SoftDeletable'
+        say '   end'
+        say ''
+        say '3. Run migrations:'
+        say '   rails db:migrate'
+        say ''
+        say '4. Visit /recycle_bin to see the web interface'
+        say ''
+      end
+
+      def display_configuration_info
+        say 'Configuration file created at:'
+        say '   config/initializers/recycle_bin.rb'
+      end
+
+      def display_success_footer
+        say '=' * 60, :green
       end
     end
   end
