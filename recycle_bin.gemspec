@@ -28,17 +28,20 @@ Gem::Specification.new do |spec|
 
   spec.require_paths = ['lib']
 
-  # Runtime dependencies - Keep it minimal for V1
-  spec.add_dependency 'rails', '>= 6.0'
+  # Runtime dependencies - Use pessimistic version constraints
+  spec.add_runtime_dependency 'rails', '>= 6.0', '< 9.0'
 
   # Development dependencies with proper version constraints
   spec.add_development_dependency 'factory_bot_rails', '~> 6.2'
-  spec.add_development_dependency 'rspec-rails', '>= 6.0'
-  spec.add_development_dependency 'sqlite3', '>= 2.1'
+  spec.add_development_dependency 'rspec-rails', '~> 6.0'
+  spec.add_development_dependency 'sqlite3', '~> 2.1'
 
-  # Gem metadata
+  # Gem metadata with distinct URIs
   spec.metadata['rubygems_mfa_required'] = 'true'
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/R95-del/recycle_bin'
   spec.metadata['changelog_uri'] = 'https://github.com/R95-del/recycle_bin/blob/main/CHANGELOG.md'
+  spec.metadata['bug_tracker_uri'] = 'https://github.com/R95-del/recycle_bin/issues'
+  spec.metadata['documentation_uri'] = 'https://github.com/R95-del/recycle_bin/blob/main/README.md'
+  spec.metadata['wiki_uri'] = 'https://github.com/R95-del/recycle_bin/wiki'
 end
