@@ -8,9 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ['Rishi Somani', 'Shobhit Jain', 'Raghav Agrawal']
   spec.email = ['somani.rishi81@gmail.com', 'shobhjain09@gmail.com', 'raghavagrawal019@gmail.com']
 
-  spec.summary = 'Simple soft delete and trash management for Rails'
-  spec.description = 'Add a recycle bin to your Rails app. ' \
-                     'Soft delete records and restore them with a simple web interface.'
+  spec.summary = 'Soft delete and trash management for Ruby on Rails applications'
+  spec.description = "RecycleBin provides soft delete functionality with a user-friendly trash/recycle bin interface for any Rails application. Easily restore deleted records with a simple web interface."
   spec.homepage = 'https://github.com/R95-del/recycle_bin'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 2.7.0'
