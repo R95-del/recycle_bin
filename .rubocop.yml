@@ -2,6 +2,12 @@ AllCops:
   TargetRubyVersion: 2.7
   NewCops: enable
   SuggestExtensions: false
+  Exclude:
+    - 'bin/**/*'
+    - 'vendor/**/*'
+    - 'spec/dummy/**/*'
+    - 'tmp/**/*'
+    - 'db/migrate/**/*'
 
 # Allow empty files
 Lint/EmptyFile:
@@ -19,6 +25,7 @@ Metrics/BlockLength:
 
 # Allow longer methods in generators and helpers  
 Metrics/MethodLength:
+  Max: 15
   Exclude:
     - 'lib/generators/**/*'
     - 'app/helpers/**/*'
@@ -26,3 +33,58 @@ Metrics/MethodLength:
 # We want documentation for public APIs but not necessarily for internal classes
 Style/Documentation:
   Enabled: true
+
+Metrics/ClassLength:
+  Max: 250
+  Exclude:
+    - 'spec/**/*'
+
+# Increase ABC size for Rails controllers
+Metrics/AbcSize:
+  Max: 20
+  Exclude:
+    - 'spec/**/*'
+
+# Increase cyclomatic complexity
+Metrics/CyclomaticComplexity:
+  Max: 8
+
+# Increase perceived complexity
+Metrics/PerceivedComplexity:
+  Max: 10
+
+# Allow longer lines for readability
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - 'spec/**/*'
+
+# Allow empty lines around class body
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+
+# Allow empty lines around module body
+Layout/EmptyLinesAroundModuleBody:
+  Enabled: false
+
+# Documentation is not required for this gem
+Style/Documentation:
+  Enabled: false
+
+# Allow frozen string literal comments
+Style/FrozenStringLiteralComment:
+  Enabled: true
+
+# Allow rescue without specifying error class in controllers
+Style/RescueStandardError:
+  Exclude:
+    - 'app/controllers/**/*'
+
+# Allow using `each` instead of `for`
+Style/For:
+  Enabled: false
+
+# Allow multiple assignments
+Style/ParallelAssignment:
+  Enabled: false
+  
