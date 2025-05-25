@@ -1,0 +1,6 @@
+class AddDeletedAtTo<%= table_name.camelize %> < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    add_column :<%= table_name %>, :deleted_at, :datetime
+    add_index :<%= table_name %>, :deleted_at
+  end
+end
