@@ -29,12 +29,12 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   # Runtime dependencies - Use pessimistic version constraints
-  spec.add_runtime_dependency 'rails', '>= 6.0', '< 9.0'
+  spec.add_dependency 'rails', '>= 6.0', '< 9.0'
 
-  # Development dependencies with proper version constraints
+  # Development dependencies - FIXED to match Gemfile
   spec.add_development_dependency 'factory_bot_rails', '~> 6.2'
-  spec.add_development_dependency 'rspec-rails', '~> 6.0'
-  spec.add_development_dependency 'sqlite3', '~> 2.1'
+  spec.add_development_dependency 'rspec-rails', '>= 6.0'  # Changed from '~> 6.0'
+  spec.add_development_dependency 'sqlite3', '~> 2.0'      # Changed from '~> 2.1'
 
   # Gem metadata with distinct URIs
   spec.metadata['rubygems_mfa_required'] = 'true'

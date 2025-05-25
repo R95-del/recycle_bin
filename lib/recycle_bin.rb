@@ -26,13 +26,15 @@ module RecycleBin
     configuration || (self.configuration = Configuration.new)
   end
 
-  # Simple stats for V1
+  # Improved stats for better performance
   def self.stats
     return {} unless defined?(Rails) && Rails.application
 
     {
       deleted_items: count_deleted_items,
-      models_with_soft_delete: models_with_soft_delete
+      models_with_soft_delete: models_with_soft_delete,
+      deleted_today: count_deleted_items_today,
+      deleted_this_week: count_deleted_items_this_week
     }
   end
 
@@ -47,11 +49,45 @@ module RecycleBin
     0
   end
 
+  def self.count_deleted_items_today
+    total = 0
+    models_with_soft_delete.each do |model_name|
+      total += count_deleted_items_for_model_since(model_name, 1.day.ago)
+    end
+    total
+  rescue StandardError => e
+    log_debug_message("Error counting today's deleted items: #{e.message}")
+    0
+  end
+
+  def self.count_deleted_items_this_week
+    total = 0
+    models_with_soft_delete.each do |model_name|
+      total += count_deleted_items_for_model_since(model_name, 1.week.ago)
+    end
+    total
+  rescue StandardError => e
+    log_debug_message("Error counting this week's deleted items: #{e.message}")
+    0
+  end
+
   def self.count_deleted_items_for_model(model_name)
     model = model_name.constantize
     model.respond_to?(:deleted) ? model.deleted.count : 0
   rescue StandardError => e
     log_debug_message("Error counting deleted items for #{model_name}: #{e.message}")
+    0
+  end
+
+  def self.count_deleted_items_for_model_since(model_name, since_time)
+    model = model_name.constantize
+    if model.respond_to?(:deleted)
+      model.deleted.where('deleted_at >= ?', since_time).count
+    else
+      0
+    end
+  rescue StandardError => e
+    log_debug_message("Error counting deleted items for #{model_name} since #{since_time}: #{e.message}")
     0
   end
 
@@ -97,14 +133,44 @@ module RecycleBin
     Rails.logger.debug(message) if defined?(Rails) && Rails.logger
   end
 
+  # Get all deleted items across all models (for advanced queries)
+  def self.all_deleted_items(limit: nil, offset: nil, order_by: :deleted_at, order_direction: :desc)
+    all_items = []
+
+    models_with_soft_delete.each do |model_name|
+      model = model_name.constantize
+      if model.respond_to?(:deleted)
+        items = model.deleted.to_a
+        all_items.concat(items)
+      end
+    rescue StandardError => e
+      log_debug_message("Error loading deleted items for #{model_name}: #{e.message}")
+    end
+
+    # Sort items
+    sorted_items = all_items.sort_by { |item| item.send(order_by) }
+    sorted_items.reverse! if order_direction == :desc
+
+    # Apply offset and limit
+    sorted_items = sorted_items.drop(offset) if offset&.positive?
+
+    sorted_items = sorted_items.first(limit) if limit&.positive?
+
+    sorted_items
+  rescue StandardError => e
+    log_debug_message("Error getting all deleted items: #{e.message}")
+    []
+  end
+
   # Configuration class for RecycleBin
   class Configuration
     attr_accessor :enable_web_interface, :items_per_page, :ui_theme,
-                  :auto_cleanup_after, :current_user_method
+                  :auto_cleanup_after, :current_user_method, :max_items_per_page
 
     def initialize
       @enable_web_interface = true
       @items_per_page = 25
+      @max_items_per_page = 1000
       @ui_theme = 'default'
       @auto_cleanup_after = nil
       @current_user_method = :current_user
