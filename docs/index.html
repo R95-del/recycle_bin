@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecycleBin - Elegant Soft Delete for Rails</title>
+    <meta name="description" content="A simple and elegant soft delete solution for Rails applications with a beautiful web interface to manage your deleted records.">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗑️</text></svg>">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-400: #ced4da;
+            --gray-500: #adb5bd;
+            --gray-600: #6c757d;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: #ffffff;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-menu a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-menu a:hover {
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 6rem 0;
+            text-align: center;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ffffff, #e2e8f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--gray-100);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Sections */
+        .section {
+            padding: 5rem 0;
+        }
+
+        .section-alt {
+            background: var(--gray-100);
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            color: var(--gray-800);
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.125rem;
+            color: var(--gray-600);
+            margin-bottom: 4rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid var(--gray-200);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--gray-800);
+        }
+
+        .feature-desc {
+            color: var(--gray-600);
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: var(--gray-900);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            margin: 0;
+        }
+
+        /* Installation Steps */
+        .install-steps {
+            display: grid;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .install-step {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary);
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            margin-right: 1rem;
+        }
+
+        .step-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-200);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        /* Team Section */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .team-member {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-200);
+            transition: transform 0.2s;
+        }
+
+        .team-member:hover {
+            transform: translateY(-4px);
+        }
+
+        .member-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin: 0 auto 1rem;
+        }
+
+        .member-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .member-role {
+            color: var(--gray-600);
+            margin-bottom: 1rem;
+        }
+
+        .member-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .member-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--gray-900);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: var(--gray-400);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--gray-700);
+            padding-top: 2rem;
+            text-align: center;
+            color: var(--gray-400);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .section {
+                padding: 3rem 0;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-200);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <span>🗑️</span>
+                <span>RecycleBin</span>
+            </a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#installation">Installation</a></li>
+                    <li><a href="#documentation">Docs</a></li>
+                    <li><a href="#team">Team</a></li>
+                    <li><a href="https://github.com/R95-del/recycle_bin">GitHub</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <h1 class="fade-in-up">RecycleBin</h1>
+            <p class="fade-in-up">A simple and elegant soft delete solution for Rails applications with a beautiful web interface to manage your deleted records.</p>
+            <div class="hero-buttons fade-in-up">
+                <a href="#installation" class="btn btn-primary">
+                    <span>🚀</span>
+                    Get Started
+                </a>
+                <a href="https://github.com/R95-del/recycle_bin" class="btn btn-outline">
+                    <span>📂</span>
+                    View on GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">1.1.0</div>
+                    <div class="stat-label">Latest Version</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">Rails 6+</div>
+                    <div class="stat-label">Compatible</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">MIT</div>
+                    <div class="stat-label">License</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">Ruby 2.7+</div>
+                    <div class="stat-label">Requirement</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Why Choose RecycleBin?</h2>
+            <p class="section-subtitle">
+                Built specifically for Rails developers who need a reliable, beautiful soft delete solution with zero complexity.
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🗑️</div>
+                    <h3 class="feature-title">Soft Delete Made Simple</h3>
+                    <p class="feature-desc">Records are marked as deleted instead of being permanently removed. Easy to include in any ActiveRecord model.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3 class="feature-title">Beautiful Web Interface</h3>
+                    <p class="feature-desc">Responsive dashboard inspired by Sidekiq's design. View, filter, and manage deleted items with an elegant UI.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title">High Performance</h3>
+                    <p class="feature-desc">Efficient pagination and lazy loading. Handles 5000+ deleted records without breaking a sweat.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3 class="feature-title">Easy Setup</h3>
+                    <p class="feature-desc">Rails generators automate the entire setup. Add soft delete to any model in under 2 minutes.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">Bulk Operations</h3>
+                    <p class="feature-desc">Select and restore/delete multiple items at once. Filter by model type, time, and more.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3 class="feature-title">Configurable Access</h3>
+                    <p class="feature-desc">Built-in authorization support. Restrict access to admins only or use custom authorization logic.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section id="installation" class="section">
+        <div class="container">
+            <h2 class="section-title">Quick Installation</h2>
+            <p class="section-subtitle">
+                Get RecycleBin running in your Rails app in just a few steps.
+            </p>
+            
+            <div class="install-steps">
+                <div class="install-step">
+                    <h3 class="step-title">
+                        <span class="step-number">1</span>
+                        Add to Gemfile
+                    </h3>
+                    <p>Add RecycleBin to your Rails application:</p>
+                    <div class="code-block">
+                        <pre><code class="language-ruby"># Gemfile
+gem 'recycle_bin', '~> 1.1'</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <pre><code class="language-bash">$ bundle install</code></pre>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <h3 class="step-title">
+                        <span class="step-number">2</span>
+                        Run Install Generator
+                    </h3>
+                    <p>Generate configuration and routes:</p>
+                    <div class="code-block">
+                        <pre><code class="language-bash">$ rails generate recycle_bin:install</code></pre>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <h3 class="step-title">
+                        <span class="step-number">3</span>
+                        Add deleted_at Column
+                    </h3>
+                    <p>For each model you want to soft delete:</p>
+                    <div class="code-block">
+                        <pre><code class="language-bash">$ rails generate recycle_bin:add_deleted_at User
+$ rails generate recycle_bin:add_deleted_at Post
+$ rails db:migrate</code></pre>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <h3 class="step-title">
+                        <span class="step-number">4</span>
+                        Include the Module
+                    </h3>
+                    <p>Add soft delete capability to your models:</p>
+                    <div class="code-block">
+                        <pre><code class="language-ruby">class User < ApplicationRecord
+  include RecycleBin::SoftDeletable
+end
+
+class Post < ApplicationRecord
+  include RecycleBin::SoftDeletable
+end</code></pre>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <h3 class="step-title">
+                        <span class="step-number">5</span>
+                        Start Using!
+                    </h3>
+                    <p>Your soft delete system is ready:</p>
+                    <div class="code-block">
+                        <pre><code class="language-ruby"># Soft delete a record
+user = User.find(1)
+user.destroy  # Goes to trash
+
+# Visit /recycle_bin to manage deleted items
+# Restore from code: user.restore</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation Section -->
+    <section id="documentation" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Documentation & Examples</h2>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3 class="feature-title">Full README</h3>
+                    <p class="feature-desc">Complete documentation with examples, configuration options, and troubleshooting guide.</p>
+                    <a href="https://github.com/R95-del/recycle_bin/blob/main/README.md" class="btn btn-primary" style="margin-top: 1rem;">Read Docs</a>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3 class="feature-title">Changelog</h3>
+                    <p class="feature-desc">Track all updates, new features, and improvements across versions.</p>
+                    <a href="https://github.com/R95-del/recycle_bin/blob/main/CHANGELOG.md" class="btn btn-primary" style="margin-top: 1rem;">View Changes</a>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🐛</div>
+                    <h3 class="feature-title">Issue Tracker</h3>
+                    <p class="feature-desc">Report bugs, request features, or get help from the community.</p>
+                    <a href="https://github.com/R95-del/recycle_bin/issues" class="btn btn-primary" style="margin-top: 1rem;">Report Issue</a>
+                </div>
+            </div>
+
+            <div style="margin-top: 3rem;">
+                <h3 style="font-size: 2rem; margin-bottom: 2rem; text-align: center;">Quick Reference</h3>
+                
+                <div class="code-block">
+                    <pre><code class="language-ruby"># Basic Usage
+user = User.create(name: "John Doe")
+user.destroy          # Soft delete
+user.deleted?         # => true
+user.restore          # Bring back
+user.destroy!         # Permanent delete
+
+# Querying
+User.all             # Active records only (default scope)
+User.deleted         # Deleted records only
+User.with_deleted    # All records including deleted
+User.restore(123)    # Restore by ID
+
+# Configuration
+RecycleBin.configure do |config|
+  config.items_per_page = 50
+  config.authorize_with do |controller|
+    controller.current_user&.admin?
+  end
+end</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="section">
+        <div class="container">
+            <h2 class="section-title">Meet the Team</h2>
+            <p class="section-subtitle">
+                Built with ❤️ by Rails developers for the Rails community.
+            </p>
+            
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="member-avatar">RS</div>
+                    <h3 class="member-name">Rishi Somani</h3>
+                    <p class="member-role">Core Developer</p>
+                    <div class="member-links">
+                        <a href="mailto:somani.rishi81@gmail.com">Email</a>
+                        <a href="https://github.com/R95-del">GitHub</a>
+                        <a href="https://rubygems.org/profiles/Rishi07">Ruby-Gems</a>
+                    </div>
+                </div>
+                
+                <div class="team-member">
+                    <div class="member-avatar">SJ</div>
+                    <h3 class="member-name">Shobhit Jain</h3>
+                    <p class="member-role">Core Developer</p>
+                    <div class="member-links">
+                        <a href="mailto:shobhjain09@gmail.com">Email</a>
+                        <a href="https://github.com/ShobhitS7">GitHub</a>
+                        <a href="https://rubygems.org/profiles/shobhits7">Ruby-Gems</a>
+                    </div>
+                </div>
+                
+                <div class="team-member">
+                    <div class="member-avatar">RA</div>
+                    <h3 class="member-name">Raghav Agrawal</h3>
+                    <p class="member-role">Core Developer</p>
+                    <div class="member-links">
+                        <a href="mailto:raghavagrawal019@gmail.com">Email</a>
+                        <a href="https://github.com/RaghavAgr">GitHub</a>
+                        <a href="https://rubygems.org/profiles/RaghavAgr">Ruby-Gems</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>RecycleBin</h3>
+                    <p style="color: var(--gray-400); margin-bottom: 1rem;">
+                        Elegant soft delete solution for Rails applications.
+                    </p>
+                    <p style="color: var(--gray-400);">
+                        Made with ❤️ for the Rails community.
+                    </p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Documentation</h3>
+                    <ul>
+                        <li><a href="https://github.com/R95-del/recycle_bin/blob/main/README.md">Getting Started</a></li>
+                        <li><a href="https://github.com/R95-del/recycle_bin/blob/main/CHANGELOG.md">Changelog</a></li>
+                        <li><a href="https://github.com/R95-del/recycle_bin/wiki">Wiki</a></li>
+                        <li><a href="https://github.com/R95-del/recycle_bin/issues">Support</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Project</h3>
+                    <ul>
+                        <li><a href="https://github.com/R95-del/recycle_bin">Source Code</a></li>
+                        <li><a href="https://github.com/R95-del/recycle_bin/issues">Bug Reports</a></li>
+                        <li><a href="https://github.com/R95-del/recycle_bin/blob/main/LICENSE.txt">License (MIT)</a></li>
+                        <li><a href="https://rubygems.org/gems/recycle_bin">RubyGems</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Community</h3>
+                    <ul>
+                        <li><a href="https://github.com/R95-del/recycle_bin/discussions">Discussions</a></li>
+                        <li><a href="https://github.com/R95-del/recycle_bin/pulls">Contribute</a></li>
+                        <li><a href="https://github.com/R95-del/recycle_bin/blob/main/README.md#contributing-🤝">Contributing Guide</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 RecycleBin. Licensed under MIT License.</p>
+                <p style="margin-top: 0.5rem;">
+                    Version 1.1.0 • 
+                    <a href="https://github.com/R95-del/recycle_bin/tags" style="color: var(--primary);">View Releases</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <!-- Smooth scrolling -->
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Animate elements on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in-up');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all feature cards and install steps
+        document.querySelectorAll('.feature-card, .install-step, .team-member').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Add copy functionality to code blocks
+        document.querySelectorAll('.code-block').forEach(block => {
+            const copyButton = document.createElement('button');
+            copyButton.textContent = 'Copy';
+            copyButton.style.cssText = `
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                background: var(--primary);
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 4px;
+                font-size: 0.875rem;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.2s;
+            `;
+            
+            block.style.position = 'relative';
+            block.appendChild(copyButton);
+            
+            block.addEventListener('mouseenter', () => {
+                copyButton.style.opacity = '1';
+            });
+            
+            block.addEventListener('mouseleave', () => {
+                copyButton.style.opacity = '0';
+            });
+            
+            copyButton.addEventListener('click', () => {
+                const code = block.querySelector('code').textContent;
+                navigator.clipboard.writeText(code).then(() => {
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.textContent = 'Copy';
+                    }, 2000);
+                });
+            });
+        });
+
+        // Mobile menu toggle (if needed in future)
+        const mobileMenuToggle = () => {
+            // Add mobile menu functionality here if needed
+        };
+    </script>
+</body>
+</html>
