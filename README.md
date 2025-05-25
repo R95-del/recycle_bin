@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🗑️ RecycleBin Gem</h1>
+  <h1>🗑️ RecycleBin</h1>
   <img src="https://raw.githubusercontent.com/R95-del/recycle_bin/main/docs/logo.svg" alt="RecycleBin Logo" width="120" height="120">
   <p><strong>Elegant soft delete solution for Ruby on Rails applications</strong></p>
   <p>
