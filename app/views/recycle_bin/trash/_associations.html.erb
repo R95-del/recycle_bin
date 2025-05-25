@@ -1,0 +1,46 @@
+<div class="main-card">
+  <div class="card-header">
+    <h3 class="card-title">Related Items</h3>
+    <div class="card-actions">
+      <span class="timestamp"><%= associations.values.flatten.count %> related items</span>
+    </div>
+  </div>
+  <div class="card-body">
+    <% associations.each do |association_name, items| %>
+      <div class="association-section">
+        <h4 class="card-title"><%= association_name.humanize %> <span class="timestamp">(<%= items.count %> items)</span></h4>
+        <% if items.any? %>
+          <div class="association-grid">
+            <% items.each do |item| %>
+              <div class="association-item">
+                <div class="association-content">
+                  <div class="card-title">
+                    <%= item.class.name %> - 
+                    <%= item.respond_to?(:title) ? item.title : 
+                        item.respond_to?(:name) ? item.name : 
+                        "ID: #{item.id}" %>
+                  </div>
+                  <div class="timestamp">
+                    Created <%= time_ago_in_words(item.created_at) %> ago
+                    <% if item.respond_to?(:deleted_at) && item.deleted_at %>
+                      • <span class="deleted-status">Also deleted</span>
+                    <% end %>
+                  </div>
+                </div>
+                <% if item.respond_to?(:deleted_at) && item.deleted_at %>
+                  <span class="model-badge deleted-badge">Deleted</span>
+                <% else %>
+                  <span class="model-badge active-badge">Active</span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="empty-state">
+            <p class="timestamp">No related items found.</p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
