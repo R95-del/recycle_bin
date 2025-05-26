@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.1] - 2025-05-26
+
+### Fixed
+- Fixed critical bug in user authentication flow
+- Resolved memory leak in background job processing
+- Corrected deprecation warnings for Rails 7.1 compatibility
+- Fixed race condition in concurrent database writes
+
+### Changed
+- Improved error handling in API responses
+- Updated dependency versions for security patches
+- Enhanced logging for better debugging experience
+
+### Security
+- Patched potential XSS vulnerability in form helpers
+- Updated vulnerable dependencies to secure versions
+
 ## [1.1.0] - 2025-05-25
 
 ### Added
