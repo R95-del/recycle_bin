@@ -434,8 +434,6 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Changelog 📝
 
-# Changelog
-
 ## [1.1.1] - 2025-05-26
 
 ### Fixed
