@@ -2,6 +2,7 @@
 
 module RecycleBin
   class TrashController < ApplicationController
+    layout 'recycle_bin/layouts/recycle_bin'
     before_action :load_deleted_items_with_pagination, only: [:index]
     before_action :find_item, only: %i[show restore destroy]
 
@@ -120,7 +121,6 @@ module RecycleBin
 
       # If we have relations, combine them; otherwise return empty relation
       if relations.any?
-        # For now, we'll work with arrays since UNION queries are complex across different models
         # Convert relations to arrays and combine
         combined_items = []
         relations.each do |relation|
@@ -253,6 +253,12 @@ module RecycleBin
       recycle_bin.root_path
     rescue StandardError
       root_path
+    end
+
+    def safe_constantize_model(model_name)
+      model_name.constantize
+    rescue NameError
+      nil
     end
   end
 

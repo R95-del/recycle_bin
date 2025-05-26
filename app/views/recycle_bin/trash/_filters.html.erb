@@ -1,0 +1,17 @@
+<% if model_types.any? %>
+  <div class="filters">
+    <div class="filter-group">
+      <span class="filter-label">Filter by type:</span>
+      <%= link_to "All", recycle_bin.root_path(page: 1), class: "btn btn-sm #{params[:type].blank? ? 'btn-primary' : 'btn-outline'}" %>
+      <% model_types.each do |model_type| %>
+        <%= link_to model_type, recycle_bin.root_path(type: model_type, page: 1), class: "btn btn-sm #{params[:type] == model_type ? 'btn-primary' : 'btn-outline'}" %>
+      <% end %>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Time:</span>
+      <%= link_to "Today", recycle_bin.root_path(time: 'today', page: 1), class: "btn btn-sm #{params[:time] == 'today' ? 'btn-primary' : 'btn-outline'}" %>
+      <%= link_to "This Week", recycle_bin.root_path(time: 'week', page: 1), class: "btn btn-sm #{params[:time] == 'week' ? 'btn-primary' : 'btn-outline'}" %>
+      <%= link_to "This Month", recycle_bin.root_path(time: 'month', page: 1), class: "btn btn-sm #{params[:time] == 'month' ? 'btn-primary' : 'btn-outline'}" %>
+    </div>
+  </div>
+<% end %>
