@@ -42,11 +42,13 @@
         margin-right: 2rem;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
       }
 
-      .logo .icon {
-        font-size: 2rem;
+      .logo-icon {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
       }
 
       .nav {
@@ -679,7 +681,11 @@
     <div class="header">
       <div class="header-content">
         <div class="logo">
-          <span class="icon">🗑️</span>
+          <img src="https://raw.githubusercontent.com/R95-del/recycle_bin/main/docs/logo.svg" 
+              alt="RecycleBin Logo" 
+              class="logo-icon"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+          <span class="icon-fallback" style="display:none;">🗑️</span>
           <span>RecycleBin</span>
         </div>
         
