@@ -1,0 +1,32 @@
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-number"><%= number_with_delimiter(total_count) %></div>
+    <div class="stat-label">Total Items in Trash</div>
+    <div class="stat-change positive">
+      <%= filtered_items.items.select { |item| item.deleted_at > 1.day.ago }.count %> deleted today
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number"><%= model_types.count %></div>
+    <div class="stat-label">Model Types</div>
+    <div class="stat-change">
+      <% if model_types.any? %>
+        <%= model_types.join(', ') %>
+      <% else %>
+        No types
+      <% end %>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number"><%= filtered_items.items.select { |item| item.deleted_at > 7.days.ago }.count %></div>
+    <div class="stat-label">This Week</div>
+    <div class="stat-change">Recent activity</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number"><%= current_page %> / <%= defined?(total_pages) ? total_pages : 1 %></div>
+    <div class="stat-label">Current Page</div>
+    <div class="stat-change">
+      Showing <%= (current_page - 1) * per_page + 1 %>-<%= [(current_page * per_page), total_count].min %> of <%= number_with_delimiter(total_count) %>
+    </div>
+  </div>
+</div>

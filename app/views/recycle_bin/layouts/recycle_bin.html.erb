@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>RecycleBin Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #333;
+        background-color: #f8f9fa;
+      }
+
+      /* Header - Sidekiq Style */
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        padding: 1rem 2rem;
+      }
+
+      .logo {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-right: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .logo .icon {
+        font-size: 2rem;
+      }
+
+      .nav {
+        display: flex;
+        gap: 0;
+        flex: 1;
+      }
+
+      .nav a {
+        color: rgba(255,255,255,0.9);
+        text-decoration: none;
+        padding: 1rem 1.5rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+        font-weight: 500;
+        position: relative;
+      }
+
+      .nav a:hover,
+      .nav a.active {
+        background: rgba(255,255,255,0.2);
+        color: white;
+      }
+
+      .nav a.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 6px solid #f8f9fa;
+      }
+
+      /* Main Container */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      /* Alerts */
+      .alert {
+        padding: 1rem 1.5rem;
+        margin-bottom: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border-color: #28a745;
+      }
+
+      .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border-color: #dc3545;
+      }
+
+      .alert-info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border-color: #17a2b8;
+      }
+
+      /* Stats Cards - Sidekiq Style */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-change {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+      }
+
+      .stat-change.positive {
+        color: #28a745;
+      }
+
+      .stat-change.negative {
+        color: #dc3545;
+      }
+
+      /* Main Content Card */
+      .main-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-bottom: 2rem;
+      }
+
+      .card-header {
+        background: #f8f9fa;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .card-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      /* Filters - Sidekiq Style */
+      .filters {
+        padding: 1rem 1.5rem;
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+
+      .filter-section {
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .filter-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        width: 100%;
+      }
+
+      .filter-label {
+        font-weight: 500;
+        color: #495057;
+        min-width: 100px;
+      }
+
+      .form-control {
+        padding: 0.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #495057;
+        background: white;
+        flex: 1;
+        max-width: 200px;
+        transition: border-color 0.2s;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+      }
+
+      /* Buttons - Sidekiq Style */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-align: center;
+      }
+
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #5a67d8;
+        transform: translateY(-1px);
+      }
+
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #218838;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #c82333;
+      }
+
+      .btn-outline {
+        background: transparent;
+        border: 1px solid #dee2e6;
+        color: #495057;
+      }
+
+      .btn-outline:hover {
+        background: #f8f9fa;
+      }
+
+      .btn-sm {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+      }
+
+      /* Table - Sidekiq Style */
+      .table-container {
+        overflow-x: auto;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+
+      .table th {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        position: sticky;
+        top: 0;
+      }
+
+      .table td {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        vertical-align: middle;
+      }
+
+      .table tr:hover {
+        background: #f8f9fa;
+      }
+
+      /* Model Type Badge */
+      .model-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: #667eea;
+        color: white;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      /* Time Stamps */
+      .timestamp {
+        color: #6c757d;
+        font-size: 0.85rem;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+      }
+
+      .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+      }
+
+      .empty-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #495057;
+      }
+
+      .empty-subtitle {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      /* Bulk Actions */
+      .bulk-actions {
+        padding: 1rem 1.5rem;
+        background: #fff3cd;
+        border-bottom: 1px solid #ffeaa7;
+        display: none;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .bulk-actions.show {
+        display: flex;
+      }
+
+      .bulk-count {
+        font-weight: 500;
+        color: #856404;
+      }
+
+      /* Pagination */
+      .pagination-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 2rem;
+      }
+
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .pagination a,
+      .pagination span,
+      .per-page a,
+      .per-page span {
+        padding: 0.5rem 1rem;
+        border: 1px solid #dee2e6;
+        color: #667eea;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+
+      .pagination a:hover,
+      .per-page a:hover {
+        background: #667eea;
+        color: white;
+      }
+
+      .pagination .current,
+      .pagination span.disabled,
+      .per-page .current {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+      }
+
+      .per-page {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #495057;
+      }
+
+      .per-page span {
+        font-size: 0.875rem;
+      }
+
+      .per-page-link {
+        /* Inherit styles from .pagination a */
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .header-content {
+          padding: 1rem;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .nav {
+          width: 100%;
+          justify-content: center;
+        }
+        
+        .container {
+          padding: 1rem;
+        }
+        
+        .filters {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+        
+        .table th,
+        .table td {
+          padding: 0.5rem;
+        }
+        
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .card-header {
+          flex-direction: column;
+          gap: 1rem;
+          align-items: flex-start;
+        }
+        
+        .card-actions {
+          width: 100%;
+          justify-content: flex-start;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .table thead {
+          display: none;
+        }
+        
+        .table tr {
+          display: block;
+          margin-bottom: 1rem;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .table td {
+          display: block;
+          padding: 0.5rem 1rem;
+          border: none;
+          border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .table td:before {
+          content: attr(data-label) ": ";
+          font-weight: bold;
+          color: #495057;
+        }
+      }
+
+      /* Loading States */
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Tooltips */
+      [data-title] {
+        position: relative;
+        cursor: help;
+      }
+
+      [data-title]:hover::after {
+        content: attr(data-title);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+      }
+
+      /* Additional Styles for Removed Inline Styles */
+      .checkbox-column {
+        width: 40px;
+      }
+
+      .back-link {
+        margin-bottom: 2rem;
+      }
+
+      .card-body {
+        padding: 1.5rem;
+      }
+
+      .field-column {
+        width: 30%;
+      }
+
+      .type-column {
+        width: 15%;
+      }
+
+      .hidden {
+        display: none;
+        margin-top: 2rem;
+      }
+
+      .boolean-true {
+        color: #28a745;
+        font-weight: 500;
+      }
+
+      .boolean-false {
+        color: #dc3545;
+        font-weight: 500;
+      }
+
+      .numeric {
+        font-family: monospace;
+      }
+
+      .pre-wrap {
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 0.85rem;
+        overflow-x: auto;
+      }
+
+      .center-content {
+        padding: 2rem;
+        text-align: center;
+      }
+
+      /* Styles for Associations */
+      .association-section {
+        margin-bottom: 2rem;
+      }
+
+      .association-grid {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .association-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 3px solid #667eea;
+        background: #f8f9fa;
+        justify-content: space-between;
+      }
+
+      .association-content {
+        flex: 1;
+      }
+
+      .deleted-status {
+        color: #dc3545;
+      }
+
+      .deleted-badge {
+        background: #dc3545;
+      }
+
+      .active-badge {
+        background: #28a745;
+      }
+
+      /* Styles for Action History */
+      .event-type {
+        text-transform: capitalize;
+        font-weight: 500;
+        color: #667eea;
+      }
+
+      .changeset-details {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin-top: 0.5rem;
+      }
+
+      .change-item {
+        margin-bottom: 0.5rem;
+      }
+
+      .change-from {
+        color: #6c757d;
+      }
+
+      .change-to {
+        color: #28a745;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="icon">🗑️</span>
+          <span>RecycleBin</span>
+        </div>
+        
+        <nav class="nav">
+          <%= link_to "Dashboard", recycle_bin.root_path, 
+                      class: ("active" if current_page?(recycle_bin.root_path)) %>
+          <%= link_to "All Items", recycle_bin.trash_index_path, 
+                      class: ("active" if current_page?(recycle_bin.trash_index_path)) %>
+        </nav>
+      </div>
+    </div>
+
+    <div class="container">
+      <%= render 'recycle_bin/shared/flash_messages' %>
+      <%= yield %>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Handle confirmation dialogs and custom method requests
+        document.querySelectorAll('[data-confirm], [data-method]').forEach(element => {
+          element.addEventListener('click', function(e) {
+            // Handle confirmation
+            if (this.dataset.confirm && !confirm(this.dataset.confirm)) {
+              e.preventDefault();
+              return;
+            }
+
+            // Handle custom method (e.g., PATCH, DELETE)
+            if (this.dataset.method) {
+              e.preventDefault();
+              
+              const method = this.dataset.method.toUpperCase();
+              const url = this.href;
+              const form = document.createElement('form');
+              form.method = 'POST';
+              form.action = url;
+              
+              const methodInput = document.createElement('input');
+              methodInput.type = 'hidden';
+              methodInput.name = '_method';
+              methodInput.value = method;
+              form.appendChild(methodInput);
+              
+              const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+              const csrfInput = document.createElement('input');
+              csrfInput.type = 'hidden';
+              csrfInput.name = 'authenticity_token';
+              csrfInput.value = csrfToken;
+              form.appendChild(csrfInput);
+              
+              document.body.appendChild(form);
+              form.submit();
+            }
+          });
+        });
+
+        // Bulk actions and other interactivity
+        updateBulkActions();
+        
+        document.addEventListener('click', function(e) {
+          if (e.target.matches('[data-copy]')) {
+            const text = e.target.dataset.copy;
+            navigator.clipboard.writeText(text).then(() => {
+              e.target.textContent = '✓ Copied!';
+              setTimeout(() => {
+                e.target.textContent = text;
+              }, 2000);
+            });
+          }
+        });
+
+        const autoRefreshCheckbox = document.getElementById('auto-refresh');
+        let autoRefreshInterval;
+        
+        if (autoRefreshCheckbox) {
+          autoRefreshCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+              autoRefreshInterval = setInterval(() => {
+                window.location.reload();
+              }, 5000);
+            } else {
+              clearInterval(autoRefreshInterval);
+            }
+          });
+        }
+      });
+
+      function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+        
+        itemCheckboxes.forEach(checkbox => {
+          checkbox.checked = selectAllCheckbox.checked;
+        });
+        
+        updateBulkActions();
+      }
+
+      function updateBulkActions() {
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        const bulkActions = document.getElementById('bulk-actions');
+        const bulkCount = document.getElementById('bulk-count');
+        const selectAllCheckbox = document.getElementById('select-all');
+        
+        if (checkedBoxes.length > 0) {
+          bulkActions.classList.add('show');
+          bulkCount.textContent = checkedBoxes.length + ' item' + (checkedBoxes.length > 1 ? 's' : '') + ' selected';
+        } else {
+          bulkActions.classList.remove('show');
+        }
+        
+        if (checkedBoxes.length === itemCheckboxes.length && itemCheckboxes.length > 0) {
+          selectAllCheckbox.checked = true;
+          selectAllCheckbox.indeterminate = false;
+        } else if (checkedBoxes.length > 0) {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = true;
+        } else {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = false;
+        }
+      }
+
+      function handleBulkAction(action) {
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        
+        if (checkedBoxes.length === 0) {
+          alert('Please select at least one item.');
+          return false;
+        }
+        
+        const selectedItems = Array.from(checkedBoxes).map(cb => cb.value);
+        
+        let message;
+        if (action === 'restore') {
+          message = 'Restore ' + checkedBoxes.length + ' selected item' + (checkedBoxes.length > 1 ? 's' : '') + '?';
+        } else {
+          message = 'Permanently delete ' + checkedBoxes.length + ' selected item' + (checkedBoxes.length > 1 ? 's' : '') + '? This cannot be undone!';
+        }
+        
+        if (!confirm(message)) {
+          return false;
+        }
+        
+        if (action === 'restore') {
+          document.getElementById('bulk-restore-items').value = JSON.stringify(selectedItems);
+        } else {
+          document.getElementById('bulk-destroy-items').value = JSON.stringify(selectedItems);
+        }
+        
+        return true;
+      }
+
+      function toggleRawData() {
+        const rawData = document.getElementById('raw-data');
+        rawData.style.display = rawData.style.display === 'none' ? 'block' : 'none';
+      }
+    </script>
+  </body>
+</html>

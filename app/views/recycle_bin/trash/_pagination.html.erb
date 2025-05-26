@@ -1,0 +1,75 @@
+<div class="pagination-wrapper">
+  <div class="pagination">
+    <% if total_pages > 1 %>
+      <!-- First/Previous links -->
+      <% if current_page > 1 %>
+        <%= link_to "« First", request.params.merge(page: 1) %>
+        <%= link_to "‹ Prev", request.params.merge(page: current_page - 1) %>
+      <% else %>
+        <span class="disabled">« First</span>
+        <span class="disabled">‹ Prev</span>
+      <% end %>
+
+      <%
+        # Smart pagination logic
+        window_size = 2 # Number of pages to show on each side of current page
+        start_page = [current_page - window_size, 1].max
+        end_page = [current_page + window_size, total_pages].min
+      %>
+
+      <!-- First page if not in window -->
+      <% if start_page > 1 %>
+        <%= link_to 1, request.params.merge(page: 1) %>
+        <% if start_page > 2 %>
+          <span class="disabled">…</span>
+        <% end %>
+      <% end %>
+
+      <!-- Page window around current page -->
+      <% (start_page..end_page).each do |page| %>
+        <% if page == current_page %>
+          <span class="current"><%= page %></span>
+        <% else %>
+          <%= link_to page, request.params.merge(page: page) %>
+        <% end %>
+      <% end %>
+
+      <!-- Last page if not in window -->
+      <% if end_page < total_pages %>
+        <% if end_page < total_pages - 1 %>
+          <span class="disabled">…</span>
+        <% end %>
+        <%= link_to total_pages, request.params.merge(page: total_pages) %>
+      <% end %>
+
+      <!-- Next/Last links -->
+      <% if current_page < total_pages %>
+        <%= link_to "Next ›", request.params.merge(page: current_page + 1) %>
+        <%= link_to "Last »", request.params.merge(page: total_pages) %>
+      <% else %>
+        <span class="disabled">Next ›</span>
+        <span class="disabled">Last »</span>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Page info -->
+  <div class="pagination-info">
+    <span>
+      Showing page <%= current_page %> of <%= total_pages %>
+      (<%= pluralize(total_count, 'item') %> total)
+    </span>
+  </div>
+
+  <!-- Per page selector -->
+  <div class="per-page">
+    <span>Items per page:</span>
+    <% [25, 50, 100].each do |num| %>
+      <% if num == per_page %>
+        <span class="current"><%= num %></span>
+      <% else %>
+        <%= link_to num, request.params.merge(per_page: num, page: 1), class: "per-page-link" %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

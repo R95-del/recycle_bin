@@ -1,0 +1,24 @@
+<tr>
+  <td><input type="checkbox" class="item-checkbox" value="<%= item.class.name %>:<%= item.id %>" onchange="updateBulkActions()"></td>
+  <td><span class="model-badge"><%= item.class.name %></span></td>
+  <td>
+    <div class="card-title">
+      <%= link_to truncate(item.recyclable_title, length: 60), recycle_bin.trash_path(item.class.name, item.id) %>
+    </div>
+    <div class="timestamp">ID: <%= item.id %></div>
+  </td>
+  <td>
+    <div class="card-title"><%= time_ago_in_words(item.deleted_at) %> ago</div>
+    <div class="timestamp"><%= item.deleted_at.strftime('%B %d, %Y at %l:%M %p') %></div>
+  </td>
+  <td>
+    <div class="card-actions">
+      <%= form_with url: recycle_bin.restore_trash_path(item.class.name, item.id), method: :patch, local: true do |form| %>
+        <%= form.submit "↶ Restore", class: "btn btn-success btn-sm", onclick: "return confirm('Restore this #{item.class.name.downcase}?')" %>
+      <% end %>
+      <%= form_with url: recycle_bin.destroy_trash_path(item.class.name, item.id), method: :delete, local: true do |form| %>
+        <%= form.submit "🗑️ Delete", class: "btn btn-danger btn-sm", onclick: "return confirm('Permanently delete this #{item.class.name.downcase}? This cannot be undone!')" %>
+      <% end %>
+    </div>
+  </td>
+</tr>
