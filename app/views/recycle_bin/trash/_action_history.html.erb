@@ -17,9 +17,9 @@
           <tbody>
             <% item.versions.each do |version| %>
               <tr>
-                <td><span class="event-type"><%= version.event.humanize %></span></td>
+                <td><span class="event-type"><%= version.respond_to?(:event) ? version.event.humanize : 'Unknown' %></span></td>
                 <td>
-                  <% if version.whodunnit %>
+                  <% if version.respond_to?(:whodunnit) && version.whodunnit %>
                     <%= version.whodunnit %>
                   <% else %>
                     <span class="timestamp">System</span>
@@ -27,20 +27,24 @@
                 </td>
                 <td>
                   <span class="timestamp">
-                    <%= time_ago_in_words(version.created_at) %> ago • 
-                    <%= version.created_at.strftime('%B %d, %Y at %l:%M %p') %>
+                    <% if version.respond_to?(:created_at) && version.created_at %>
+                      <%= time_ago_in_words(version.created_at) %> ago •
+                      <%= version.created_at.strftime('%B %d, %Y at %l:%M %p') %>
+                    <% else %>
+                      Unknown time
+                    <% end %>
                   </span>
                 </td>
                 <td>
-                  <% if version.changeset.any? %>
+                  <% if version.respond_to?(:changeset) && version.changeset.any? %>
                     <details>
                       <summary class="btn btn-outline btn-sm">View Changes</summary>
                       <div class="changeset-details">
                         <% version.changeset.each do |key, changes| %>
                           <div class="change-item">
-                            <strong><%= key.humanize %>:</strong> 
-                            <span class="change-from"><%= changes[0].nil? ? 'nil' : changes[0] %></span> 
-                            → 
+                            <strong><%= key.humanize %>:</strong>
+                            <span class="change-from"><%= changes[0].nil? ? 'nil' : changes[0] %></span>
+                            →
                             <span class="change-to"><%= changes[1].nil? ? 'nil' : changes[1] %></span>
                           </div>
                         <% end %>

@@ -38,6 +38,10 @@ A simple and elegant soft delete solution for Rails applications with a beautifu
 - **Rails Generators**: Automated setup with generators
 - **Configurable**: Flexible configuration options
 - **Statistics Dashboard**: Overview of your deleted items
+- **🔍 Enhanced Search**: Full-text search across all fields with highlighting
+- **📊 Advanced Filtering**: Filter by user, size, date ranges, and more
+- **📤 Export Functionality**: Export to CSV and JSON formats
+- **📝 Better Error Handling**: Comprehensive logging and error tracking
 
 ## Installation 📦
 
@@ -341,7 +345,7 @@ DELETE /recycle_bin/trash/bulk_destroy    # Bulk delete
 ```ruby
 class Product < ApplicationRecord
   include RecycleBin::SoftDeletable
-  
+
   def recyclable_title
     "#{name} - #{sku}"
   end
@@ -360,7 +364,7 @@ product.destroy # Goes to trash, can be restored
 class Post < ApplicationRecord
   include RecycleBin::SoftDeletable
   belongs_to :author, class_name: 'User'
-  
+
   def recyclable_title
     title.truncate(50)
   end
@@ -370,7 +374,7 @@ class Comment < ApplicationRecord
   include RecycleBin::SoftDeletable
   belongs_to :post
   belongs_to :user
-  
+
   def recyclable_title
     "Comment by #{user.name}: #{body.truncate(30)}"
   end
@@ -382,7 +386,7 @@ end
 ```ruby
 class User < ApplicationRecord
   include RecycleBin::SoftDeletable
-  
+
   def recyclable_title
     "#{name} (#{email})"
   end
@@ -455,7 +459,7 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ### Added
 - **Proper pagination**: Navigate through all deleted records with page controls
-- **Configurable page sizes**: Choose 25, 50, 100, or 250 items per page  
+- **Configurable page sizes**: Choose 25, 50, 100, or 250 items per page
 - **Accurate item counting**: Shows real total counts instead of limited counts
 - **Enhanced statistics**: Added today/week deletion counts
 - **Better performance**: Optimized handling of large datasets
@@ -507,3 +511,130 @@ The gem is available as open source under the terms of the [MIT License](https:/
 **Made with ❤️ for the Rails community**
 
 *Need help? Open an issue on [GitHub](https://github.com/R95-del/recycle_bin) or check out the web interface at `/recycle_bin` in your Rails app.*
+
+## Advanced Features 🚀
+
+### Enhanced Search & Discovery
+
+RecycleBin now provides powerful search capabilities across all your deleted items:
+
+```ruby
+# Search across all fields including title, name, email, content, etc.
+# Visit /recycle_bin?search=john@example.com
+
+# Search results are highlighted in the interface
+# Search works across all model types and attributes
+```
+
+**Search Features:**
+- **Full-text Search**: Search across all item fields and attributes
+- **Smart Highlighting**: Search terms are highlighted in results
+- **Cross-model Search**: Find items across all soft-deleted models
+- **Real-time Results**: Instant search with live filtering
+
+### Advanced Filtering Options
+
+Go beyond basic filtering with advanced options:
+
+```ruby
+# Filter by user who deleted the item
+/recycle_bin?deleted_by=123
+
+# Filter by item size
+/recycle_bin?size=large  # small, medium, large
+
+# Filter by date range
+/recycle_bin?date_from=2024-01-01&date_to=2024-12-31
+
+# Combine multiple filters
+/recycle_bin?search=john&type=User&size=medium&time=month
+```
+
+**Filter Types:**
+- **Model Type**: Filter by specific model (User, Post, Comment, etc.)
+- **Time Periods**: Today, This Week, This Month, This Year
+- **User Filtering**: Find items deleted by specific users
+- **Size Classification**: Small (< 1KB), Medium (1KB-100KB), Large (> 100KB)
+- **Date Ranges**: Custom from/to date filtering
+- **Active Filter Display**: See all active filters with easy removal
+
+### Export Functionality
+
+Export your filtered results in multiple formats:
+
+```ruby
+# Export current results to CSV
+/recycle_bin?format=csv&search=john&type=User
+
+# Export current results to JSON
+/recycle_bin?format=json&time=month
+
+# Export includes all current filters and search terms
+# Filenames include filter information and timestamps
+```
+
+**Export Features:**
+- **CSV Export**: Structured data for spreadsheet applications
+- **JSON Export**: Programmatic access to your data
+- **Filter Preservation**: Exports respect all current filters
+- **Smart Filenames**: Include search terms and filter info
+- **Large Dataset Support**: Efficient export of thousands of items
+
+### Improved Error Handling & Logging
+
+Enhanced error tracking and debugging capabilities:
+
+```ruby
+RecycleBin.configure do |config|
+  # Enable external error logging (e.g., Sentry)
+  config.error_logging_service = ->(error_context) {
+    Sentry.capture_exception(error_context[:error], extra: error_context)
+  }
+
+  # Configure search settings
+  config.enable_full_text_search = true
+  config.searchable_fields = %w[title name email content body description]
+  config.max_search_length = 100
+
+  # Configure export settings
+  config.enable_csv_export = true
+  config.enable_json_export = true
+  config.max_export_items = 10000
+end
+```
+
+**Logging Features:**
+- **Structured Logging**: JSON-formatted error logs with context
+- **External Integration**: Support for Sentry, LogRocket, etc.
+- **Debug Information**: Comprehensive debugging data
+- **Performance Tracking**: Monitor search and export performance
+- **User Context**: Track which users perform which actions
+
+### Configuration Options
+
+```ruby
+# config/initializers/recycle_bin.rb
+RecycleBin.configure do |config|
+  # Search configuration
+  config.enable_full_text_search = true
+  config.searchable_fields = %w[title name email content body description]
+  config.max_search_length = 100
+  config.search_timeout = 30.seconds
+  config.enable_fuzzy_search = false
+  config.min_search_length = 2
+
+  # Export configuration
+  config.enable_csv_export = true
+  config.enable_json_export = true
+  config.max_export_items = 10000
+  config.export_timeout = 5.minutes
+  config.include_metadata = true
+  config.compress_large_exports = true
+
+  # Advanced features
+  config.enable_advanced_filters = true
+  config.enable_search_highlighting = true
+  config.max_search_results = 10000
+  config.enable_audit_logging = false
+end
+```
