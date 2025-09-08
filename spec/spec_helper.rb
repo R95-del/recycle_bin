@@ -38,7 +38,7 @@ module RecycleBin
                   :auto_cleanup_after, :current_user_method, :max_items_per_page,
                   :search_settings, :export_settings, :error_logging_service,
                   :enable_advanced_filters, :enable_search_highlighting,
-                  :max_search_results, :search_timeout, :enable_export,
+                  :max_search_results, :enable_export,
                   :export_formats, :export_max_items, :enable_audit_logging
 
     def initialize

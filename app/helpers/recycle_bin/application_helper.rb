@@ -120,7 +120,7 @@ module RecycleBin
     end
 
     # Check if current page has search results
-    def has_search_results?
+    def search_results?
       @deleted_items&.any?
     end
 
