@@ -165,15 +165,52 @@ module RecycleBin
   # Configuration class for RecycleBin
   class Configuration
     attr_accessor :enable_web_interface, :items_per_page, :ui_theme,
-                  :auto_cleanup_after, :current_user_method, :max_items_per_page
+                  :auto_cleanup_after, :current_user_method, :max_items_per_page,
+                  :search_settings, :export_settings, :error_logging_service,
+                  :enable_advanced_filters, :enable_search_highlighting,
+                  :max_search_results, :search_timeout, :enable_export,
+                  :export_formats, :export_max_items, :enable_audit_logging
 
     def initialize
+      # Basic settings
       @enable_web_interface = true
       @items_per_page = 25
       @max_items_per_page = 1000
       @ui_theme = 'default'
       @auto_cleanup_after = nil
       @current_user_method = :current_user
+
+      # Search settings
+      @search_settings = {
+        enable_full_text_search: true,
+        searchable_fields: %w[title name email content body description],
+        max_search_length: 100,
+        search_timeout: 30.seconds,
+        enable_fuzzy_search: false,
+        min_search_length: 2
+      }
+
+      # Export settings
+      @export_settings = {
+        enable_csv_export: true,
+        enable_json_export: true,
+        max_export_items: 10_000,
+        export_timeout: 5.minutes,
+        include_metadata: true,
+        compress_large_exports: true
+      }
+
+      # Advanced features
+      @enable_advanced_filters = true
+      @enable_search_highlighting = true
+      @max_search_results = 10_000
+      @enable_export = true
+      @export_formats = %w[csv json]
+      @export_max_items = 10_000
+      @enable_audit_logging = false
+
+      # Error logging service (can be set to external service like Sentry)
+      @error_logging_service = nil
     end
 
     def authorize_with(&block)
@@ -182,6 +219,79 @@ module RecycleBin
 
     def authorization_method
       @authorization_method || proc { true }
+    end
+
+    # Search configuration methods
+    def search_config
+      @search_settings
+    end
+
+    def enable_full_text_search=(value)
+      @search_settings[:enable_full_text_search] = value
+    end
+
+    def searchable_fields=(fields)
+      @search_settings[:searchable_fields] = Array(fields)
+    end
+
+    def max_search_length=(length)
+      @search_settings[:max_search_length] = length
+    end
+
+    def search_timeout=(timeout)
+      @search_settings[:search_timeout] = timeout
+    end
+
+    # Export configuration methods
+    def export_config
+      @export_settings
+    end
+
+    def enable_csv_export=(value)
+      @export_settings[:enable_csv_export] = value
+    end
+
+    def enable_json_export=(value)
+      @export_settings[:enable_json_export] = value
+    end
+
+    def max_export_items=(count)
+      @export_settings[:max_export_items] = count
+    end
+
+    def export_timeout=(timeout)
+      @export_settings[:export_timeout] = timeout
+    end
+
+    # Validation methods
+    def valid?
+      validate_configuration
+    end
+
+    def validate_configuration
+      errors = []
+
+      # Validate search settings
+      errors << 'min_search_length cannot be greater than max_search_length' if @search_settings[:min_search_length] > @search_settings[:max_search_length]
+
+      errors << 'search_timeout must be positive' if @search_settings[:search_timeout] <= 0
+
+      # Validate export settings
+      errors << 'max_export_items must be positive' if @export_settings[:max_export_items] <= 0
+
+      errors << 'export_timeout must be positive' if @export_settings[:export_timeout] <= 0
+
+      # Validate basic settings
+      errors << 'items_per_page must be positive' if @items_per_page <= 0
+
+      errors << 'max_items_per_page cannot be less than items_per_page' if @max_items_per_page < @items_per_page
+
+      errors.empty?
+    end
+
+    def errors
+      validate_configuration
+      []
     end
   end
 end

@@ -1,0 +1,618 @@
+<% content_for :title, "Dashboard" %>
+
+<!-- Dashboard Stats Overview -->
+<div class="dashboard-container">
+  <!-- Main Stats Grid -->
+  <div class="dashboard-stats-grid">
+    <%= render 'recycle_bin/trash/stats',
+               total_count: @total_count,
+               model_types: @model_types,
+               filtered_items: @all_deleted_items,
+               current_page: 1,
+               per_page: @total_count,
+               total_pages: 1,
+               dashboard_view: true %>
+  </div>
+
+  <!-- Dashboard Content Grid -->
+  <div class="dashboard-content-grid">
+    <!-- Recent Activity Panel -->
+    <div class="dashboard-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">📊 Recent Activity</h3>
+        <%= link_to "View All Items", recycle_bin.trash_index_path, 
+                    class: "panel-action-link" %>
+      </div>
+      <div class="panel-content">
+        <% if @recent_items.any? %>
+          <div class="recent-items-list">
+            <% @recent_items.each do |item| %>
+              <div class="recent-item">
+                <div class="item-info">
+                  <span class="model-badge"><%= item.class.name %></span>
+                  <span class="item-title">
+                    <%= link_to "#{item.class.name} ##{item.id}", 
+                                recycle_bin.trash_path(item.class.name, item.id),
+                                class: "item-link" %>
+                  </span>
+                </div>
+                <div class="item-meta">
+                  <span class="timestamp">
+                    🕒 <%= time_ago_in_words(item.deleted_at) %> ago
+                  </span>
+                  <div class="item-actions">
+                    <%= link_to "↶", recycle_bin.restore_trash_path(item.class.name, item.id), 
+                                method: :patch,
+                                class: "quick-action-btn restore-btn",
+                                title: "Restore",
+                                data: { confirm: "Restore this item?" } %>
+                    <%= link_to "🗑️", recycle_bin.trash_path(item.class.name, item.id), 
+                                method: :delete,
+                                class: "quick-action-btn delete-btn",
+                                title: "Delete Permanently",
+                                data: { confirm: "Permanently delete this item?" } %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          
+          <% if @total_count > @recent_items.count %>
+            <div class="panel-footer">
+              <p class="more-items-text">
+                Showing <%= @recent_items.count %> of <%= number_with_delimiter(@total_count) %> deleted items
+              </p>
+              <%= link_to "View All Items →", recycle_bin.trash_index_path, 
+                          class: "btn btn-primary btn-sm" %>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="empty-state-mini">
+            <div class="empty-icon">🎉</div>
+            <h4 class="empty-title">All Clean!</h4>
+            <p class="empty-subtitle">No deleted items to show. Your recycle bin is empty.</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Model Types Breakdown -->
+    <div class="dashboard-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">📁 Model Breakdown</h3>
+      </div>
+      <div class="panel-content">
+        <% if @model_breakdown.any? %>
+          <div class="model-breakdown-list">
+            <% @model_breakdown.each do |model_data| %>
+              <div class="model-breakdown-item">
+                <div class="model-info">
+                  <span class="model-badge model-<%= model_data[:name].downcase %>">
+                    <%= model_data[:name] %>
+                  </span>
+                  <div class="model-details">
+                    <span class="model-count"><%= model_data[:count] %> items</span>
+                    <span class="model-percentage">
+                      <%= number_to_percentage(model_data[:percentage], precision: 1) %>
+                    </span>
+                  </div>
+                </div>
+                <div class="model-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" 
+                         style="width: <%= model_data[:percentage] %>%"></div>
+                  </div>
+                </div>
+                <div class="model-actions">
+                  <%= link_to "View", recycle_bin.trash_index_path(type: model_data[:name]),
+                              class: "btn btn-outline btn-sm" %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="empty-state-mini">
+            <div class="empty-icon">📁</div>
+            <p class="empty-subtitle">No model data available</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="dashboard-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">⚡ Quick Actions</h3>
+      </div>
+      <div class="panel-content">
+        <div class="quick-actions-grid">
+          <div class="quick-action-card">
+            <div class="action-icon">📋</div>
+            <h4 class="action-title">View All Items</h4>
+            <p class="action-description">Browse and manage all deleted items with advanced filtering</p>
+            <%= link_to "Browse Items", recycle_bin.trash_index_path, 
+                        class: "btn btn-primary btn-sm" %>
+          </div>
+          
+          <div class="quick-action-card">
+            <div class="action-icon">📊</div>
+            <h4 class="action-title">Export Data</h4>
+            <p class="action-description">Export all deleted items to CSV or JSON format</p>
+            <div class="action-buttons">
+              <%= link_to "CSV", recycle_bin.trash_index_path(format: :csv), 
+                          class: "btn btn-outline btn-sm" %>
+              <%= link_to "JSON", recycle_bin.trash_index_path(format: :json), 
+                          class: "btn btn-outline btn-sm" %>
+            </div>
+          </div>
+          
+          <% if @total_count > 0 %>
+            <div class="quick-action-card">
+              <div class="action-icon">🔍</div>
+              <h4 class="action-title">Search Items</h4>
+              <p class="action-description">Find specific items using advanced search</p>
+              <%= link_to "Advanced Search", recycle_bin.trash_index_path(anchor: "filters"), 
+                          class: "btn btn-primary btn-sm" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time-based Activity (if we have recent activity) -->
+    <% if @weekly_stats.any? %>
+      <div class="dashboard-panel full-width">
+        <div class="panel-header">
+          <h3 class="panel-title">📈 Weekly Activity</h3>
+        </div>
+        <div class="panel-content">
+          <div class="weekly-stats-chart">
+            <% @weekly_stats.each do |day_stat| %>
+              <div class="day-stat">
+                <div class="day-bar" 
+                     style="height: <%= [day_stat[:percentage], 10].max %>%"
+                     title="<%= day_stat[:count] %> items on <%= day_stat[:day] %>">
+                </div>
+                <span class="day-label"><%= day_stat[:day] %></span>
+                <span class="day-count"><%= day_stat[:count] %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard-stats-grid {
+  margin-bottom: 8px;
+}
+
+.dashboard-content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-panel {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-panel.full-width {
+  grid-column: 1 / -1;
+}
+
+.panel-header {
+  padding: 20px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-action-link {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.panel-action-link:hover {
+  color: #5a67d8;
+  text-decoration: none;
+}
+
+.panel-content {
+  padding: 24px;
+}
+
+.panel-footer {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  text-align: center;
+}
+
+.more-items-text {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+/* Recent Items */
+.recent-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.recent-item:hover {
+  border-color: #667eea;
+  background: #f8f9fa;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.item-link {
+  color: #495057;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.item-link:hover {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.quick-action-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.quick-action-btn.restore-btn {
+  background: #28a745;
+  color: white;
+}
+
+.quick-action-btn.restore-btn:hover {
+  background: #218838;
+  color: white;
+  text-decoration: none;
+}
+
+.quick-action-btn.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.quick-action-btn.delete-btn:hover {
+  background: #c82333;
+  color: white;
+  text-decoration: none;
+}
+
+/* Model Breakdown */
+.model-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.model-breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.model-details {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.model-count {
+  font-weight: 600;
+  color: #495057;
+}
+
+.model-percentage {
+  color: #6c757d;
+}
+
+.model-progress {
+  flex: 1;
+  margin: 0 12px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Quick Actions */
+.quick-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quick-action-card {
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  text-align: center;
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.quick-action-card:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.action-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.action-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+  margin: 0 0 8px 0;
+}
+
+.action-description {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Weekly Stats Chart */
+.weekly-stats-chart {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 8px;
+  height: 200px;
+  padding: 20px 0;
+}
+
+.day-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+}
+
+.day-bar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 100%;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-height: 10px;
+}
+
+.day-bar:hover {
+  opacity: 0.8;
+}
+
+.day-label {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.day-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Empty States */
+.empty-state-mini {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-state-mini .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-mini .empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+  margin: 0 0 8px 0;
+}
+
+.empty-state-mini .empty-subtitle {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+/* Model Badge Variations */
+.model-badge.model-post {
+  background: #28a745;
+}
+
+.model-badge.model-user {
+  background: #17a2b8;
+}
+
+.model-badge.model-comment {
+  background: #ffc107;
+  color: #212529;
+}
+
+.model-badge.model-article {
+  background: #6f42c1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .panel-header {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .panel-content {
+    padding: 20px;
+  }
+  
+  .recent-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .item-meta {
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .model-breakdown-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .model-progress {
+    width: 100%;
+    margin: 0;
+  }
+  
+  .quick-actions-grid {
+    gap: 12px;
+  }
+  
+  .weekly-stats-chart {
+    height: 150px;
+    padding: 16px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    gap: 16px;
+  }
+  
+  .recent-items-list {
+    gap: 12px;
+  }
+  
+  .recent-item {
+    padding: 12px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+</style>

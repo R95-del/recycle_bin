@@ -1,35 +1,84 @@
 <% content_for :title, "Deleted Items" %>
-<%= render 'recycle_bin/trash/stats', 
-           total_count: @total_count, 
-           model_types: @model_types, 
-           filtered_items: @filtered_items, 
-           current_page: @current_page, 
-           per_page: @per_page, 
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="page-title-section">
+    <h1 class="page-title">🗂️ All Items</h1>
+    <p class="page-subtitle">Browse and manage all deleted items with advanced filtering and search</p>
+  </div>
+  <div class="page-actions">
+    <%= link_to "← Back to Dashboard", recycle_bin.root_path, class: "btn btn-outline" %>
+  </div>
+</div>
+
+<!-- Search Results Summary -->
+<% if params[:search].present? %>
+  <div class="search-summary">
+    <div class="search-summary-content">
+      <h3>🔍 <%= search_result_summary(@total_count, params[:search]) %></h3>
+      <% if @total_count > 0 %>
+        <p class="search-tip">💡 Tip: Use advanced filters to narrow down your results further</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<!-- Filter Breadcrumb -->
+<% if any_filters_active? %>
+  <div class="filter-breadcrumb">
+    <span class="breadcrumb-label">📋 Active Filters:</span>
+    <span class="breadcrumb-content"><%= filter_breadcrumb %></span>
+    <span class="filter-count-badge"><%= active_filter_count %></span>
+  </div>
+<% end %>
+
+<%= render 'recycle_bin/trash/stats',
+           total_count: @total_count,
+           model_types: @model_types,
+           filtered_items: @filtered_items,
+           current_page: @current_page,
+           per_page: @per_page,
            total_pages: @total_pages %>
+
 <%= render 'recycle_bin/trash/filters', model_types: @model_types %>
+
 <% if @deleted_items.any? %>
   <div class="main-card">
     <div class="card-header">
-      <h3 class="card-title">Deleted Items (<%= number_with_delimiter(@total_count) %>)</h3>
+      <h3 class="card-title">
+        Deleted Items
+        <% if params[:search].present? %>
+          <span class="search-highlight">for "<%= params[:search] %>"</span>
+        <% end %>
+        (<%= number_with_delimiter(@total_count) %>)
+      </h3>
       <div class="card-actions">
-        <%# <label class="btn btn-outline btn-sm">
-          <input type="checkbox" id="auto-refresh"> Auto-refresh
-        </label> %>
+        <!-- Export buttons -->
+        <div class="export-buttons">
+          <%= link_to "📊 CSV Export", recycle_bin.trash_index_path(format: :csv, **request.query_parameters),
+                      class: "btn btn-outline btn-sm",
+                      title: "Export current results to CSV" %>
+          <%= link_to "📄 JSON Export", recycle_bin.trash_index_path(format: :json, **request.query_parameters),
+                      class: "btn btn-outline btn-sm",
+                      title: "Export current results to JSON" %>
+        </div>
       </div>
     </div>
+
     <div id="bulk-actions" class="bulk-actions">
       <span id="bulk-count">0 items selected</span>
       <div class="card-actions">
-        <%= form_with url: recycle_bin.bulk_restore_trash_index_path, method: :patch, local: true do |form| %>
+        <%= form_with url: bulk_restore_trash_index_path, method: :patch, local: true do |form| %>
           <input type="hidden" id="bulk-restore-items" name="selected_items" value="">
           <%= form.submit "↶ Restore Selected", class: "btn btn-success btn-sm", onclick: "return handleBulkAction('restore')" %>
         <% end %>
-        <%= form_with url: recycle_bin.bulk_destroy_trash_index_path, method: :delete, local: true do |form| %>
+        <%= form_with url: bulk_destroy_trash_index_path, method: :delete, local: true do |form| %>
           <input type="hidden" id="bulk-destroy-items" name="selected_items" value="">
           <%= form.submit "🗑️ Delete Selected", class: "btn btn-danger btn-sm", onclick: "return handleBulkAction('destroy')" %>
         <% end %>
       </div>
     </div>
+
     <div class="table-container">
       <table class="table">
         <thead>
@@ -38,6 +87,7 @@
             <th>Type</th>
             <th>Item</th>
             <th>Deleted At</th>
+            <th>Size</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -47,14 +97,193 @@
       </table>
     </div>
   </div>
+
   <%= render 'recycle_bin/trash/pagination', current_page: @current_page, total_pages: @total_pages, total_count: @total_count, per_page: @per_page %>
+
 <% else %>
   <div class="main-card">
     <div class="empty-state">
-      <div class="empty-icon">🎉</div>
-      <h4 class="empty-title">No items match your filters!</h4>
-      <p class="empty-subtitle">Try adjusting your filters or check back later for deleted items.</p>
-      <%= link_to "Clear Filters", recycle_bin.root_path, class: "btn btn-primary" %>
+      <% if params[:search].present? %>
+        <div class="empty-icon">🔍</div>
+        <h4 class="empty-title">No search results found!</h4>
+        <p class="empty-subtitle">
+          No items match your search "<strong><%= params[:search] %></strong>".
+          Try adjusting your search terms or filters.
+        </p>
+        <div class="empty-actions">
+          <%= link_to "Clear Search", recycle_bin.trash_index_path, class: "btn btn-primary" %>
+          <%= link_to "View All Items", recycle_bin.trash_index_path, class: "btn btn-outline" %>
+        </div>
+      <% elsif any_filters_active? %>
+        <div class="empty-icon">📊</div>
+        <h4 class="empty-title">No items match your filters!</h4>
+        <p class="empty-subtitle">
+          Try adjusting your filter criteria or <%= link_to "clear all filters", recycle_bin.trash_index_path %>.
+        </p>
+      <% else %>
+        <div class="empty-icon">🎉</div>
+        <h4 class="empty-title">No items match your filters!</h4>
+        <p class="empty-subtitle">Try adjusting your filters or check back later for deleted items.</p>
+        <%= link_to "Clear Filters", recycle_bin.trash_index_path, class: "btn btn-primary" %>
+      <% end %>
     </div>
   </div>
 <% end %>
+
+<style>
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.page-title-section {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #495057;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: #6c757d;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+  
+  .page-subtitle {
+    font-size: 14px;
+  }
+}
+
+.search-summary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-summary-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.5rem;
+}
+
+.search-tip {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+.filter-breadcrumb {
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-label {
+  font-weight: 600;
+  color: #1976d2;
+  font-size: 14px;
+}
+
+.breadcrumb-content {
+  color: #1565c0;
+  font-size: 14px;
+}
+
+.filter-count-badge {
+  background: #1976d2;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.search-highlight {
+  background: #fff3cd;
+  color: #856404;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.empty-actions .btn {
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .search-summary-content h3 {
+    font-size: 1.2rem;
+  }
+
+  .filter-breadcrumb {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .filter-count-badge {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .empty-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+</style>

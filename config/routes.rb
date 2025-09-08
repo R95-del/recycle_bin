@@ -1,14 +1,21 @@
 # frozen_string_literal: true
 
 RecycleBin::Engine.routes.draw do
-  root 'trash#index'
+  # Dashboard as root
+  root 'trash#dashboard'
 
-  # Standard resource routes
+  # Dashboard route
+  get 'dashboard', to: 'trash#dashboard', as: 'dashboard'
+
+  # Standard resource routes with format support
   resources :trash, only: [:index] do
     collection do
       patch :bulk_restore
       delete :bulk_destroy
       delete :cleanup_large_items
+      # Export routes
+      get :export_csv, defaults: { format: :csv }
+      get :export_json, defaults: { format: :json }
     end
   end
 

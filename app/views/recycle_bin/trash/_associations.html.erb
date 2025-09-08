@@ -15,13 +15,17 @@
               <div class="association-item">
                 <div class="association-content">
                   <div class="card-title">
-                    <%= item.class.name %> - 
-                    <%= item.respond_to?(:title) ? item.title : 
-                        item.respond_to?(:name) ? item.name : 
+                    <%= item.class.name %> -
+                    <%= item.respond_to?(:title) ? item.title :
+                        item.respond_to?(:name) ? item.name :
                         "ID: #{item.id}" %>
                   </div>
                   <div class="timestamp">
-                    Created <%= time_ago_in_words(item.created_at) %> ago
+                    <% if item.respond_to?(:created_at) && item.created_at %>
+                      Created <%= time_ago_in_words(item.created_at) %> ago
+                    <% else %>
+                      Created recently
+                    <% end %>
                     <% if item.respond_to?(:deleted_at) && item.deleted_at %>
                       • <span class="deleted-status">Also deleted</span>
                     <% end %>
