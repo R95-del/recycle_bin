@@ -1,24 +1,267 @@
-<tr>
-  <td><input type="checkbox" class="item-checkbox" value="<%= item.class.name %>:<%= item.id %>" onchange="updateBulkActions()"></td>
-  <td><span class="model-badge"><%= item.class.name %></span></td>
-  <td>
-    <div class="card-title">
-      <%= link_to truncate(item.recyclable_title, length: 60), recycle_bin.trash_path(item.class.name, item.id) %>
+<tr class="item-row" data-item-id="<%= item.id %>" data-model-type="<%= item.class.name %>">
+  <td class="checkbox-column">
+    <input type="checkbox"
+           class="item-checkbox"
+           value="<%= item.class.name %>:<%= item.id %>"
+           onchange="updateBulkCount()">
+  </td>
+
+  <td class="type-column">
+    <span class="model-badge <%= item.class.name.downcase %>">
+      <%= item.class.name %>
+    </span>
+  </td>
+
+  <td class="item-column">
+    <div class="item-content">
+      <div class="item-title">
+        <% if params[:search].present? %>
+          <%= highlight_search_terms(item.recyclable_title, params[:search]) %>
+        <% else %>
+          <%= item.recyclable_title %>
+        <% end %>
+      </div>
+      <div class="item-meta">
+        <span class="item-id">ID: <%= item.id %></span>
+        <% if item.respond_to?(:user_id) && item.user_id.present? %>
+          <span class="item-user">User: <%= item.user_id %></span>
+        <% end %>
+        <% if item.respond_to?(:email) && item.email.present? %>
+          <span class="item-email">
+            <% if params[:search].present? %>
+              <%= highlight_search_terms(item.email, params[:search]) %>
+            <% else %>
+              <%= item.email %>
+            <% end %>
+          </span>
+        <% end %>
+      </div>
     </div>
-    <div class="timestamp">ID: <%= item.id %></div>
   </td>
-  <td>
-    <div class="card-title"><%= time_ago_in_words(item.deleted_at) %> ago</div>
-    <div class="timestamp"><%= item.deleted_at.strftime('%B %d, %Y at %l:%M %p') %></div>
+
+  <td class="timestamp-column">
+    <div class="timestamp-content">
+      <div class="timestamp-relative">
+        <%= time_ago_in_words(item.deleted_at) %> ago
+      </div>
+      <div class="timestamp-absolute">
+        <%= item.deleted_at.strftime('%B %d, %Y at %l:%M %p') %>
+      </div>
+    </div>
   </td>
-  <td>
-    <div class="card-actions">
-      <%= form_with url: recycle_bin.restore_trash_path(item.class.name, item.id), method: :patch, local: true do |form| %>
-        <%= form.submit "↶ Restore", class: "btn btn-success btn-sm", onclick: "return confirm('Restore this #{item.class.name.downcase}?')" %>
-      <% end %>
-      <%= form_with url: recycle_bin.destroy_trash_path(item.class.name, item.id), method: :delete, local: true do |form| %>
-        <%= form.submit "🗑️ Delete", class: "btn btn-danger btn-sm", onclick: "return confirm('Permanently delete this #{item.class.name.downcase}? This cannot be undone!')" %>
-      <% end %>
+
+  <td class="size-column">
+    <span class="size-badge <%= size_class(item) %>">
+      <%= human_file_size(calculate_item_memory_size(item)) %>
+    </span>
+  </td>
+
+  <td class="actions-column">
+    <div class="action-buttons">
+      <%= link_to "👁️ View", recycle_bin.trash_path(item.class.name, item),
+                  class: "btn btn-sm btn-outline",
+                  title: "View details" %>
+      <%= link_to "↶ Restore", recycle_bin.restore_trash_path(item.class.name, item),
+                  method: :patch,
+                  class: "btn btn-sm btn-success",
+                  title: "Restore item",
+                  data: { confirm: "Restore this #{item.class.name.downcase}?" } %>
+      <%= link_to "🗑️ Delete", recycle_bin.destroy_trash_path(item.class.name, item),
+                  method: :delete,
+                  class: "btn btn-sm btn-danger",
+                  title: "Permanently delete",
+                  data: { confirm: "Permanently delete this #{item.class.name.downcase}? This cannot be undone!" } %>
     </div>
   </td>
 </tr>
+
+<style>
+.item-row {
+  transition: background-color 0.2s ease;
+}
+
+.item-row:hover {
+  background-color: #f8f9fa;
+}
+
+.item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-title {
+  font-weight: 600;
+  color: #212529;
+  line-height: 1.3;
+}
+
+.item-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.item-id, .item-user, .item-email {
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.timestamp-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timestamp-relative {
+  font-weight: 600;
+  color: #495057;
+}
+
+.timestamp-absolute {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.size-column {
+  text-align: center;
+}
+
+.size-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 60px;
+  display: inline-block;
+}
+
+.size-badge.small {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.size-badge.medium {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.size-badge.large {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+}
+
+/* Search highlighting */
+mark {
+  background: #fff3cd;
+  color: #856404;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* Model type badges */
+.model-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.model-badge.user {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.model-badge.post {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.model-badge.comment {
+  background: #e8f5e8;
+  color: #388e3c;
+}
+
+.model-badge.order {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.model-badge.product {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .item-meta {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+</style>
+
+<script>
+// Helper function to determine size class for styling
+function sizeClass(item) {
+  // This will be handled by the helper method in the controller
+  return 'medium'; // Default fallback
+}
+
+// Update bulk count when checkboxes change
+function updateBulkCount() {
+  const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+  const bulkCount = document.getElementById('bulk-count');
+  const bulkActions = document.getElementById('bulk-actions');
+
+  if (bulkCount) {
+    bulkCount.textContent = `${checkboxes.length} item${checkboxes.length === 1 ? '' : 's'} selected`;
+  }
+
+  if (bulkActions) {
+    bulkActions.style.display = checkboxes.length > 0 ? 'flex' : 'none';
+  }
+
+  // Update bulk action forms
+  const selectedItems = Array.from(checkboxes).map(cb => cb.value);
+  document.getElementById('bulk-restore-items').value = JSON.stringify(selectedItems);
+  document.getElementById('bulk-destroy-items').value = JSON.stringify(selectedItems);
+}
+
+// Initialize bulk count on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateBulkCount();
+});
+</script>
