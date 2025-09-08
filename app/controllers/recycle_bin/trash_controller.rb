@@ -177,7 +177,7 @@ module RecycleBin
 
       # Model breakdown for chart
       model_counts = @all_deleted_items.group_by { |item| item.class.name }
-      @model_breakdown = model_counts.map do |model_name, items|
+      model_data = model_counts.map do |model_name, items|
         count = items.count
         percentage = @total_count.positive? ? (count.to_f / @total_count * 100) : 0
         {
@@ -185,7 +185,8 @@ module RecycleBin
           count: count,
           percentage: percentage
         }
-      end.sort_by { |data| -data[:count] }
+      end
+      @model_breakdown = model_data.sort_by { |data| -data[:count] }
 
       # Weekly stats (last 7 days)
       @weekly_stats = if @all_deleted_items.any?
