@@ -28,6 +28,15 @@ A simple and elegant soft delete solution for Rails applications with a beautifu
 
 **RecycleBin** provides a "trash can" or "recycle bin" functionality where deleted records are marked as deleted instead of being permanently removed from your database. You can easily restore them or permanently delete them through a clean web interface.
 
+## 🆕 What's New in Version 1.2.0
+
+✨ **Enhanced Analytics Dashboard** - Complete redesign with comprehensive statistics, visual charts, and weekly activity tracking  
+🔍 **Intelligent Search System** - Priority-based search with exact matching, starts-with matching, and precision filtering  
+🎛️ **Advanced Filtering UI** - Modern card-based layout with collapsible advanced filters and active filter display  
+📊 **Separate Dashboard & List Views** - Distinct pages optimized for overview vs detailed management  
+🎨 **Modern UI/UX** - Responsive design with gradients, better spacing, and intuitive navigation  
+⚡ **Performance Improvements** - Faster searches, optimized memory usage, and better handling of large datasets
+
 ## Features ✨
 
 - **Soft Delete**: Records are marked as deleted instead of being permanently removed
@@ -48,7 +57,7 @@ A simple and elegant soft delete solution for Rails applications with a beautifu
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'recycle_bin', '~> 1.1'
+gem 'recycle_bin', '~> 1.2'
 ```
 
 And then execute:
@@ -437,6 +446,39 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/R95-de
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Changelog 📝
+
+## [1.2.0] - 2025-09-08
+
+### Added
+- **🎨 Enhanced Analytics Dashboard**: Complete redesign with comprehensive statistics and visual charts
+- **🔍 Improved Search System**: Priority-based search with exact matching, starts-with matching, and intelligent filtering
+- **🎛️ Advanced Filtering UI**: Modern card-based layout with collapsible advanced filters
+- **📊 Dashboard vs All Items Pages**: Distinct pages with different purposes - overview vs detailed management
+- **📈 Weekly Activity Charts**: Visual representation of deletion activity over the past 7 days
+- **🥧 Model Breakdown Statistics**: Pie chart showing distribution of deleted items by model type
+- **🏷️ Active Filters Display**: Shows currently applied filters with individual removal options
+- **📱 Responsive Design**: Mobile-friendly interface with proper spacing and typography
+- **⚡ Collection Method Enhancement**: Added `reject` method to `DeletedItemsCollection` for better compatibility
+
+### Fixed
+- **🎯 Search Precision**: Fixed search showing irrelevant results by implementing priority-based matching
+- **🥇 Primary Field Priority**: Search now prioritizes title/name/subject fields over content fields
+- **🚫 False Match Reduction**: Removed broad content field searches that caused incorrect results
+- **👮‍♂️ RuboCop Compliance**: Fixed code style issues and improved code quality
+- **🧪 Test Coverage**: Added comprehensive tests for new search functionality
+
+### Changed
+- **🔄 Search Algorithm**: Complete rewrite with 5-tier priority system (exact match → starts with → contains → ID → class name)
+- **✨ UI/UX Improvements**: Modern gradient design, better spacing, and intuitive navigation
+- **🏗️ Dashboard Architecture**: Separated dashboard overview from detailed item management
+- **📂 Filter Organization**: Grouped filters logically with expandable sections
+- **📏 Search Term Length**: Applied minimum length requirements for different search types
+- **🏆 Code Quality**: Improved method organization and reduced complexity
+
+### Performance
+- **🚀 Search Optimization**: Reduced false matches and improved search relevance
+- **⚡ UI Responsiveness**: Faster page loads with optimized CSS and layout
+- **🧠 Memory Efficiency**: Better handling of large datasets in search results
 
 ## [1.1.1] - 2025-05-26
 
