@@ -461,37 +461,37 @@
           flex-direction: column;
           gap: 1rem;
         }
-        
+
         .nav {
           width: 100%;
           justify-content: center;
         }
-        
+
         .container {
           padding: 1rem;
         }
-        
+
         .filters {
           flex-direction: column;
           align-items: flex-start;
           gap: 1rem;
         }
-        
+
         .table th,
         .table td {
           padding: 0.5rem;
         }
-        
+
         .stats-grid {
           grid-template-columns: repeat(2, 1fr);
         }
-        
+
         .card-header {
           flex-direction: column;
           gap: 1rem;
           align-items: flex-start;
         }
-        
+
         .card-actions {
           width: 100%;
           justify-content: flex-start;
@@ -502,7 +502,7 @@
         .table thead {
           display: none;
         }
-        
+
         .table tr {
           display: block;
           margin-bottom: 1rem;
@@ -510,14 +510,14 @@
           border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
         .table td {
           display: block;
           padding: 0.5rem 1rem;
           border: none;
           border-bottom: 1px solid #f0f0f0;
         }
-        
+
         .table td:before {
           content: attr(data-label) ": ";
           font-weight: bold;
@@ -681,18 +681,18 @@
     <div class="header">
       <div class="header-content">
         <div class="logo">
-          <img src="https://raw.githubusercontent.com/R95-del/recycle_bin/main/docs/logo.svg" 
-              alt="RecycleBin Logo" 
+          <img src="https://raw.githubusercontent.com/R95-del/recycle_bin/main/docs/logo.svg"
+              alt="RecycleBin Logo"
               class="logo-icon"
               onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
           <span class="icon-fallback" style="display:none;">🗑️</span>
           <span>RecycleBin</span>
         </div>
-        
+
         <nav class="nav">
-          <%= link_to "Dashboard", recycle_bin.root_path, 
-                      class: ("active" if current_page?(recycle_bin.root_path)) %>
-          <%= link_to "All Items", recycle_bin.trash_index_path, 
+          <%= link_to "Dashboard", recycle_bin.root_path,
+                      class: ("active" if current_page?(recycle_bin.root_path) || current_page?(recycle_bin.dashboard_path)) %>
+          <%= link_to "All Items", recycle_bin.trash_index_path,
                       class: ("active" if current_page?(recycle_bin.trash_index_path)) %>
         </nav>
       </div>
@@ -717,26 +717,26 @@
             // Handle custom method (e.g., PATCH, DELETE)
             if (this.dataset.method) {
               e.preventDefault();
-              
+
               const method = this.dataset.method.toUpperCase();
               const url = this.href;
               const form = document.createElement('form');
               form.method = 'POST';
               form.action = url;
-              
+
               const methodInput = document.createElement('input');
               methodInput.type = 'hidden';
               methodInput.name = '_method';
               methodInput.value = method;
               form.appendChild(methodInput);
-              
+
               const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
               const csrfInput = document.createElement('input');
               csrfInput.type = 'hidden';
               csrfInput.name = 'authenticity_token';
               csrfInput.value = csrfToken;
               form.appendChild(csrfInput);
-              
+
               document.body.appendChild(form);
               form.submit();
             }
@@ -745,7 +745,7 @@
 
         // Bulk actions and other interactivity
         updateBulkActions();
-        
+
         document.addEventListener('click', function(e) {
           if (e.target.matches('[data-copy]')) {
             const text = e.target.dataset.copy;
@@ -760,7 +760,7 @@
 
         const autoRefreshCheckbox = document.getElementById('auto-refresh');
         let autoRefreshInterval;
-        
+
         if (autoRefreshCheckbox) {
           autoRefreshCheckbox.addEventListener('change', function() {
             if (this.checked) {
@@ -777,11 +777,11 @@
       function toggleSelectAll() {
         const selectAllCheckbox = document.getElementById('select-all');
         const itemCheckboxes = document.querySelectorAll('.item-checkbox');
-        
+
         itemCheckboxes.forEach(checkbox => {
           checkbox.checked = selectAllCheckbox.checked;
         });
-        
+
         updateBulkActions();
       }
 
@@ -790,14 +790,15 @@
         const bulkActions = document.getElementById('bulk-actions');
         const bulkCount = document.getElementById('bulk-count');
         const selectAllCheckbox = document.getElementById('select-all');
-        
+        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+
         if (checkedBoxes.length > 0) {
           bulkActions.classList.add('show');
           bulkCount.textContent = checkedBoxes.length + ' item' + (checkedBoxes.length > 1 ? 's' : '') + ' selected';
         } else {
           bulkActions.classList.remove('show');
         }
-        
+
         if (checkedBoxes.length === itemCheckboxes.length && itemCheckboxes.length > 0) {
           selectAllCheckbox.checked = true;
           selectAllCheckbox.indeterminate = false;
@@ -812,31 +813,31 @@
 
       function handleBulkAction(action) {
         const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
-        
+
         if (checkedBoxes.length === 0) {
           alert('Please select at least one item.');
           return false;
         }
-        
+
         const selectedItems = Array.from(checkedBoxes).map(cb => cb.value);
-        
+
         let message;
         if (action === 'restore') {
           message = 'Restore ' + checkedBoxes.length + ' selected item' + (checkedBoxes.length > 1 ? 's' : '') + '?';
         } else {
           message = 'Permanently delete ' + checkedBoxes.length + ' selected item' + (checkedBoxes.length > 1 ? 's' : '') + '? This cannot be undone!';
         }
-        
+
         if (!confirm(message)) {
           return false;
         }
-        
+
         if (action === 'restore') {
           document.getElementById('bulk-restore-items').value = JSON.stringify(selectedItems);
         } else {
           document.getElementById('bulk-destroy-items').value = JSON.stringify(selectedItems);
         }
-        
+
         return true;
       }
 
