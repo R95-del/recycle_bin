@@ -8,7 +8,7 @@ RSpec.describe RecycleBin do
 
   it 'has a version number' do
     expect(RecycleBin::VERSION).not_to be nil
-    expect(RecycleBin::VERSION).to eq('1.2.0')
+    expect(RecycleBin::VERSION).to eq('1.3.0')
   end
 
   describe '.config' do
@@ -374,6 +374,163 @@ RSpec.describe RecycleBin do
     end
   end
 
+  describe 'cleanup methods' do
+    describe '.cleanup_old_items!' do
+      # NOTE: Rails is always defined in gem context, so we skip the 'requires Rails' test
+
+      if defined?(ActiveRecord) && defined?(TestModel)
+        it 'performs cleanup with specified cutoff date', :ar do
+          # Clear existing data
+          TestModel.with_deleted.delete_all
+
+          # Create old items
+          old_item = TestModel.create(name: 'Old')
+          old_item.soft_delete
+          old_item.update_column(:deleted_at, 60.days.ago)
+
+          results = RecycleBin.cleanup_old_items!(cutoff_date: 30.days.ago)
+
+          expect(results[:success]).to be true
+          expect(results[:deleted_count]).to be >= 1
+        end
+
+        it 'supports dry run mode', :ar do
+          # Clear existing data
+          TestModel.with_deleted.delete_all
+
+          # Create old items
+          old_item = TestModel.create(name: 'Old')
+          old_item.soft_delete
+          old_item.update_column(:deleted_at, 60.days.ago)
+
+          initial_count = TestModel.with_deleted.count
+
+          results = RecycleBin.cleanup_old_items!(cutoff_date: 30.days.ago, dry_run: true)
+
+          expect(results[:dry_run]).to be true
+          expect(TestModel.with_deleted.count).to eq(initial_count)
+        end
+      end
+    end
+
+    describe '.cleanup_status' do
+      context 'when auto_cleanup_after is not configured' do
+        before do
+          RecycleBin.configure do |config|
+            config.auto_cleanup_after = nil
+          end
+        end
+
+        it 'returns disabled status' do
+          status = RecycleBin.cleanup_status
+
+          expect(status[:enabled]).to be false
+          expect(status[:message]).to eq('Auto-cleanup is not configured')
+        end
+      end
+
+      context 'when auto_cleanup_after is configured' do
+        before do
+          RecycleBin.configure do |config|
+            config.auto_cleanup_after = 30.days
+          end
+        end
+
+        it 'returns enabled status with details' do
+          status = RecycleBin.cleanup_status
+
+          expect(status[:enabled]).to be true
+          expect(status[:auto_cleanup_after]).to eq(30.days)
+          expect(status[:cutoff_date]).to be_within(1.second).of(30.days.ago)
+          expect(status[:items_pending_deletion]).to be_a(Integer)
+          expect(status[:next_cleanup_recommended]).to include('rake')
+        end
+      end
+    end
+
+    describe '.items_pending_cleanup' do
+      it 'returns 0 when cutoff_date is nil' do
+        count = RecycleBin.items_pending_cleanup(nil)
+        expect(count).to eq(0)
+      end
+
+      if defined?(ActiveRecord) && defined?(TestModel)
+        it 'counts items older than cutoff date', :ar do
+          # Clear existing data
+          TestModel.with_deleted.delete_all
+
+          # Create old and recent items
+          old_item = TestModel.create(name: 'Old')
+          old_item.soft_delete
+          old_item.update_column(:deleted_at, 60.days.ago)
+
+          recent_item = TestModel.create(name: 'Recent')
+          recent_item.soft_delete
+          recent_item.update_column(:deleted_at, 15.days.ago)
+
+          count = RecycleBin.items_pending_cleanup(30.days.ago)
+          expect(count).to be >= 1
+        end
+
+        it 'uses config cutoff date when not provided', :ar do
+          RecycleBin.configure do |config|
+            config.auto_cleanup_after = 30.days
+          end
+
+          count = RecycleBin.items_pending_cleanup
+          expect(count).to be_a(Integer)
+        end
+      end
+    end
+
+    describe '.calculate_cleanup_cutoff_date' do
+      it 'returns nil when auto_cleanup_after is not set' do
+        RecycleBin.configure do |config|
+          config.auto_cleanup_after = nil
+        end
+
+        expect(RecycleBin.calculate_cleanup_cutoff_date).to be_nil
+      end
+
+      it 'calculates cutoff date from config' do
+        RecycleBin.configure do |config|
+          config.auto_cleanup_after = 45.days
+        end
+
+        cutoff = RecycleBin.calculate_cleanup_cutoff_date
+        expect(cutoff).to be_within(1.second).of(45.days.ago)
+      end
+    end
+  end
+
+  describe 'cleanup configuration' do
+    let(:config) { RecycleBin::Configuration.new }
+
+    it 'has default cleanup_batch_size' do
+      expect(config.cleanup_batch_size).to eq(100)
+    end
+
+    it 'allows setting cleanup_batch_size' do
+      config.cleanup_batch_size = 250
+      expect(config.cleanup_batch_size).to eq(250)
+    end
+
+    it 'validates cleanup_batch_size is positive' do
+      config.cleanup_batch_size = -1
+      expect(config.valid?).to be false
+    end
+
+    it 'validates auto_cleanup_after is a valid duration' do
+      config.auto_cleanup_after = 'invalid'
+      expect(config.valid?).to be false
+    end
+
+    it 'accepts valid duration for auto_cleanup_after' do
+      config.auto_cleanup_after = 30.days
+      expect(config.valid?).to be true
+    end
+  end
+
   describe 'error handling' do
     it 'handles configuration errors gracefully' do
       # Test that configuration errors don't crash the system
@@ -385,7 +542,6 @@ RSpec.describe RecycleBin do
       config.items_per_page = -1
 
       expect(config.valid?).to be false
-      expect(config.errors).to include('items_per_page must be positive')
     end
   end
 

@@ -28,29 +28,42 @@ A simple and elegant soft delete solution for Rails applications with a beautifu
 
 **RecycleBin** provides a "trash can" or "recycle bin" functionality where deleted records are marked as deleted instead of being permanently removed from your database. You can easily restore them or permanently delete them through a clean web interface.
 
-## 🆕 What's New in Version 1.2.0
+## 🆕 What's New in Version 1.3.0
 
-✨ **Enhanced Analytics Dashboard** - Complete redesign with comprehensive statistics, visual charts, and weekly activity tracking  
-🔍 **Intelligent Search System** - Priority-based search with exact matching, starts-with matching, and precision filtering  
-🎛️ **Advanced Filtering UI** - Modern card-based layout with collapsible advanced filters and active filter display  
-📊 **Separate Dashboard & List Views** - Distinct pages optimized for overview vs detailed management  
-🎨 **Modern UI/UX** - Responsive design with gradients, better spacing, and intuitive navigation  
-⚡ **Performance Improvements** - Faster searches, optimized memory usage, and better handling of large datasets
+🗑️ **Scheduled Auto-Cleanup** - Automatically delete old trash items with flexible scheduling
+⏰ **Rake Tasks** - Manual cleanup with `rake recycle_bin:cleanup` and dry-run mode
+🤖 **Background Job Support** - Optional ActiveJob for scheduled execution
+📅 **Smart Scheduling** - Works with ANY scheduler (Whenever, Sidekiq-cron, GoodJob, Heroku, etc.)
+🔍 **Status Monitoring** - Check cleanup status and pending deletions
+🛡️ **Safety First** - Dry-run mode, confirmations, and comprehensive logging
 
 ## Features ✨
 
+### Core Features
 - **Soft Delete**: Records are marked as deleted instead of being permanently removed
 - **Web Interface**: Beautiful, responsive dashboard to view and manage deleted items
 - **Easy Integration**: Simple module inclusion in your models
 - **Bulk Operations**: Restore or permanently delete multiple items at once
-- **Model Filtering**: Filter deleted items by model type and time
+- **Statistics Dashboard**: Overview of your deleted items with charts
+
+### Search & Filtering
+- **🔍 Enhanced Search**: Full-text search across all fields with highlighting
+- **📊 Advanced Filtering**: Filter by model type, time period, user, size, and date ranges
+- **🎯 Priority-Based Search**: Smart matching with exact, starts-with, and contains logic
+
+### Auto-Cleanup (NEW in v1.3.0)
+- **🗑️ Scheduled Cleanup**: Automatically delete old trash items based on age
+- **⏰ Manual Control**: Run cleanup anytime with rake tasks
+- **🔍 Dry-Run Mode**: Preview what will be deleted before committing
+- **🤖 Background Jobs**: Optional ActiveJob support for async processing
+- **📅 Flexible Scheduling**: Works with ANY scheduler (cron, Whenever, Sidekiq-cron, etc.)
+- **🛡️ Safety Features**: Confirmations, logging, and error recovery
+
+### Additional Features
+- **📤 Export Functionality**: Export to CSV and JSON formats
 - **Rails Generators**: Automated setup with generators
 - **Configurable**: Flexible configuration options
-- **Statistics Dashboard**: Overview of your deleted items
-- **🔍 Enhanced Search**: Full-text search across all fields with highlighting
-- **📊 Advanced Filtering**: Filter by user, size, date ranges, and more
-- **📤 Export Functionality**: Export to CSV and JSON formats
-- **📝 Better Error Handling**: Comprehensive logging and error tracking
+- **📝 Comprehensive Logging**: Detailed error tracking and audit trails
 
 ## Installation 📦
 
@@ -232,6 +245,270 @@ end
 
 If authorization fails, users will be redirected with an "Access denied" message.
 
+## Auto-Cleanup 🗑️ (NEW in v1.3.0)
+
+RecycleBin can automatically delete old trash items to keep your database clean.
+
+### Quick Setup
+
+**Step 1: Configure auto-cleanup**
+
+```ruby
+# config/initializers/recycle_bin.rb
+RecycleBin.configure do |config|
+  # Delete items older than 30 days
+  config.auto_cleanup_after = 30.days
+
+  # Optional: Configure batch size (default: 100)
+  config.cleanup_batch_size = 100
+end
+```
+
+**Step 2: Test it manually**
+
+```bash
+# Preview what will be deleted (safe - doesn't actually delete)
+bundle exec rake recycle_bin:cleanup:dry_run
+
+# Check current status
+bundle exec rake recycle_bin:status
+
+# Actually run cleanup
+bundle exec rake recycle_bin:cleanup
+```
+
+**Step 3: Schedule it** (choose ONE method)
+
+```ruby
+# Option A: Whenever gem (most common)
+# config/schedule.rb
+every 1.day, at: '2:00 am' do
+  rake 'recycle_bin:cleanup'
+end
+
+# Option B: Sidekiq-cron
+# config/initializers/sidekiq.rb
+Sidekiq::Cron::Job.create(
+  name: 'RecycleBin cleanup',
+  cron: '0 2 * * *',  # Daily at 2 AM
+  class: 'RecycleBin::CleanupJob'
+)
+
+# Option C: System cron
+# Add to crontab:
+# 0 2 * * * cd /path/to/app && bundle exec rake recycle_bin:cleanup RAILS_ENV=production
+
+# Option D: Heroku Scheduler
+# Just add this command in Heroku dashboard:
+# rake recycle_bin:cleanup
+```
+
+### Rake Tasks
+
+RecycleBin provides several rake tasks for managing cleanup:
+
+```bash
+# Preview cleanup without deleting
+rake recycle_bin:cleanup:dry_run
+
+# Actually delete old items
+rake recycle_bin:cleanup
+
+# Delete items older than specific number of days
+rake recycle_bin:cleanup DAYS=60
+
+# Check cleanup status and pending deletions
+rake recycle_bin:status
+
+# View detailed statistics
+rake recycle_bin:stats
+```
+
+### Scheduling Guide Generator
+
+Generate a comprehensive scheduling guide for your infrastructure:
+
+```bash
+rails generate recycle_bin:schedule
+```
+
+This creates `doc/recycle_bin_scheduling.md` with:
+- ✅ Personalized examples based on your setup
+- ✅ 8+ scheduling methods (Whenever, Sidekiq-cron, GoodJob, Heroku, etc.)
+- ✅ Platform-specific examples (AWS, Kubernetes, Docker)
+- ✅ Troubleshooting guide
+- ✅ Best practices
+
+### Programmatic Usage
+
+You can also run cleanup programmatically in your code:
+
+```ruby
+# Run cleanup with default configuration
+result = RecycleBin.cleanup_old_items!
+
+# Run with custom cutoff date
+result = RecycleBin.cleanup_old_items!(cutoff_date: 60.days.ago)
+
+# Dry run (preview only)
+result = RecycleBin.cleanup_old_items!(dry_run: true)
+
+# Check results
+puts "Deleted: #{result[:deleted_count]} items"
+puts "Success: #{result[:success]}"
+result[:models_processed].each do |model, count|
+  puts "  #{model}: #{count}"
+end
+```
+
+### Background Job (Optional)
+
+If you use a job processor (Sidekiq, GoodJob, DelayedJob, etc.), you can use the provided job:
+
+```ruby
+# Enqueue the cleanup job
+RecycleBin::CleanupJob.perform_later
+
+# With custom cutoff date
+RecycleBin::CleanupJob.perform_later(cutoff_date: 60.days.ago)
+
+# The job will:
+# - Automatically retry on failures (up to 3 attempts)
+# - Log all operations to Rails.logger
+# - Report detailed results
+# - Work with any ActiveJob backend
+```
+
+**Note**: The `RecycleBin::CleanupJob` is automatically available in your Rails app once the gem is installed. It's loaded by the Rails Engine autoloading system.
+
+### Monitoring Cleanup Status
+
+Check cleanup configuration and pending items:
+
+```ruby
+# Get cleanup status
+status = RecycleBin.cleanup_status
+
+if status[:enabled]
+  puts "Auto-cleanup: ENABLED"
+  puts "Cutoff date: #{status[:cutoff_date]}"
+  puts "Items pending: #{status[:items_pending_deletion]}"
+else
+  puts "Auto-cleanup: DISABLED"
+end
+
+# Count items that will be deleted
+count = RecycleBin.items_pending_cleanup
+puts "#{count} items will be deleted on next cleanup"
+
+# Count for specific date
+count = RecycleBin.items_pending_cleanup(60.days.ago)
+puts "#{count} items older than 60 days"
+```
+
+### Safety Features
+
+RecycleBin cleanup includes multiple safety mechanisms:
+
+**1. Dry-Run Mode**
+```bash
+# Preview without deleting
+rake recycle_bin:cleanup:dry_run
+```
+
+**2. Confirmation Prompts**
+```bash
+$ rake recycle_bin:cleanup
+Cutoff date: 2025-09-12 02:00:00
+Items to be deleted: 42
+
+⚠️  This will PERMANENTLY delete items. Continue? (y/N):
+```
+
+**3. Comprehensive Logging**
+- All operations are logged
+- Errors are tracked and reported
+- Progress tracking for large datasets
+
+**4. Batch Processing**
+- Processes items in batches (default: 100)
+- Prevents memory issues with large datasets
+- Configurable batch size
+
+**5. Error Recovery**
+- Individual item failures don't stop the process
+- Continues with other items
+- Reports all errors at the end
+
+### Example Output
+
+```bash
+$ rake recycle_bin:cleanup:dry_run
+
+============================================================
+        RecycleBin Cleanup (DRY RUN)
+============================================================
+
+Cutoff date: 2025-09-12 02:00:00
+Items to be deleted: 42
+
+🔍 DRY RUN MODE - No items will be deleted
+
+============================================================
+✅ Cleanup preview complete!
+Total items would be deleted: 42
+
+Breakdown by model:
+  User: 10
+  Post: 25
+  Comment: 7
+============================================================
+```
+
+### Best Practices
+
+✅ **Do:**
+- Start with a longer cleanup period (60+ days)
+- Test with dry-run first
+- Run during low-traffic hours (2-4 AM)
+- Monitor logs for errors
+- Set up alerts for failures
+
+❌ **Don't:**
+- Set cleanup period too short (<7 days)
+- Skip dry-run testing
+- Run during peak hours
+- Ignore cleanup errors
+
+### Troubleshooting
+
+**No items being deleted?**
+
+```ruby
+# Check configuration
+RecycleBin.config.auto_cleanup_after  # Should return a duration
+
+# Check cutoff date
+RecycleBin.calculate_cleanup_cutoff_date  # Should return a date
+
+# Check for eligible items
+RecycleBin.items_pending_cleanup  # Should return a count
+```
+
+**Cleanup not running on schedule?**
+
+```bash
+# Verify task exists
+rake -T recycle_bin
+
+# Test manually
+rake recycle_bin:cleanup:dry_run
+
+# Check scheduler logs
+# - For cron: grep CRON /var/log/syslog
+# - For Sidekiq: tail -f log/sidekiq.log
+```
+
 ## Advanced Usage 🔧
 
 ### Custom Title Display
@@ -303,11 +580,21 @@ RecycleBin.models_with_soft_delete # => ["User", "Post", "Comment"]
 
 ### Configuration Options
 
+**Basic Settings:**
 - `enable_web_interface` - Enable/disable web UI (default: true)
 - `items_per_page` - Pagination limit (default: 25)
-- `auto_cleanup_after` - Auto-delete after time period (default: nil)
 - `current_user_method` - Method to get current user (default: :current_user)
 - `authorize_with` - Authorization callback block
+
+**Auto-Cleanup Settings (v1.3.0):**
+- `auto_cleanup_after` - Delete items older than this duration (default: nil - disabled)
+- `cleanup_batch_size` - Number of items to process per batch (default: 100)
+
+**Search & Export Settings:**
+- `enable_full_text_search` - Enable full-text search (default: true)
+- `searchable_fields` - Fields to search (default: title, name, email, etc.)
+- `enable_csv_export` - Enable CSV export (default: true)
+- `enable_json_export` - Enable JSON export (default: true)
 
 ## Generators 🛠️
 
@@ -317,7 +604,10 @@ RecycleBin.models_with_soft_delete # => ["User", "Post", "Comment"]
 $ rails generate recycle_bin:install
 ```
 
-Sets up RecycleBin in your Rails application.
+Sets up RecycleBin in your Rails application. Creates:
+- Configuration file at `config/initializers/recycle_bin.rb`
+- Adds mount point to routes
+- Displays setup instructions
 
 ### Add DeletedAt Generator
 
@@ -325,7 +615,13 @@ Sets up RecycleBin in your Rails application.
 $ rails generate recycle_bin:add_deleted_at ModelName
 ```
 
-Adds the `deleted_at` column to the specified model.
+Adds the `deleted_at` column to the specified model. Example:
+
+```bash
+$ rails generate recycle_bin:add_deleted_at User
+$ rails generate recycle_bin:add_deleted_at Post
+$ rails db:migrate
+```
 
 ## Web Interface Routes 🛣️
 

@@ -1,5 +1,92 @@
 # Changelog
 
+## [1.3.0] - 2025-10-12
+
+### Added
+- **Auto-Cleanup System**: Automated deletion of old soft-deleted records based on age
+- **Cleanup Service**: Core `CleanupService` class with batch processing and safety features
+- **Rake Tasks**: Four new rake tasks for manual cleanup operations
+  - `rake recycle_bin:cleanup` - Permanently delete old items with confirmation
+  - `rake recycle_bin:cleanup:dry_run` - Preview cleanup without deleting
+  - `rake recycle_bin:status` - Check auto-cleanup configuration status
+  - `rake recycle_bin:stats` - View detailed statistics with cleanup info
+- **Background Job Support**: Optional `CleanupJob` for scheduled execution via ActiveJob
+- **Configuration Options**: Two new configuration options
+  - `config.auto_cleanup_after` - Set age threshold for automatic cleanup
+  - `config.cleanup_batch_size` - Control batch size for cleanup operations (default: 100)
+- **Module-Level Methods**: New public API methods for programmatic access
+  - `RecycleBin.cleanup_old_items!` - Execute cleanup with options
+  - `RecycleBin.cleanup_status` - Get current cleanup configuration status
+  - `RecycleBin.items_pending_cleanup` - Count items eligible for cleanup
+
+### Features
+- **Safety First Design**: Multiple safety mechanisms to prevent accidental data loss
+  - Dry-run mode for previewing deletions
+  - Manual confirmation prompts in rake tasks
+  - Batch processing to prevent memory issues
+  - Comprehensive error handling and logging
+  - Configuration validation
+- **Flexible Scheduling**: Works with any scheduling system
+  - Whenever gem integration examples
+  - Sidekiq-cron integration examples
+  - System cron examples
+  - Heroku Scheduler examples
+  - Manual rake task execution
+- **Comprehensive Monitoring**: Track and monitor cleanup operations
+  - Detailed result reporting
+  - Per-model deletion counts
+  - Error tracking and logging
+  - Status checking APIs
+
+### Fixed
+- **Rails Detection**: Improved Rails availability checking in stats method
+- **Configuration Validation**: Fixed `errors` method to return array of error messages instead of boolean
+
+### Changed
+- **Documentation**: Extensive README updates with ~275 lines of auto-cleanup documentation
+  - Quick setup guide (3 steps)
+  - Complete rake tasks reference
+  - Programmatic usage examples
+  - Background job integration guide
+  - Monitoring and status checking
+  - Safety features explanation
+  - Best practices and troubleshooting
+- **Configuration Organization**: Reorganized config options into logical categories
+
+### Testing
+- **Comprehensive Test Coverage**: Added 30+ new tests
+  - CleanupService specs (16 examples)
+  - CleanupJob specs (8 examples)
+  - Module-level method specs (14 examples)
+  - Integration tests for rake tasks
+- **Test Suite Status**: 135 examples, 0 failures (100% pass rate)
+
+### Documentation
+- **README.md**: Added ~275 lines of comprehensive auto-cleanup documentation
+- **CHANGELOG.md**: Complete v1.3.0 release notes
+
+### Performance
+- **Batch Processing**: Processes items in configurable batches to prevent memory issues
+- **Efficient Querying**: Uses `find_each` for memory-efficient iteration
+- **Optimized Deletion**: Bulk deletion within batches for better performance
+
+### Technical Details
+- Added `RecycleBin::CleanupService` in `app/services/recycle_bin/`
+- Added `RecycleBin::CleanupJob` in `app/jobs/recycle_bin/`
+- Added comprehensive rake tasks in `lib/tasks/recycle_bin_tasks.rake`
+- Enhanced `RecycleBin` module with cleanup methods
+- Updated `Configuration` class with new options and validation
+- Added ENV variable support for skipping engine loading in tests
+
+### Breaking Changes
+None - All changes are backward compatible
+
+### Upgrade Notes
+- The new auto-cleanup feature is **opt-in** and disabled by default
+- No database migrations required
+- No code changes required for existing functionality
+- To enable, simply set `config.auto_cleanup_after` in your initializer
+
 ## [1.2.0] - 2025-09-08
 
 ### Added
